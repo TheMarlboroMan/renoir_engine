@@ -2,7 +2,6 @@
 class Constantes_renoir_engine
 {
 	const RUTA_ENGINE='/opt/lampp/htdocs/renoir_engine/';
-//	const RUTA_ENGINE='/www/hosting/caballorenoir.net/renoir_engine/';
 };
 
 require(Constantes_renoir_engine::RUTA_ENGINE.'class_motor/contrato_bbdd.interface.php');
