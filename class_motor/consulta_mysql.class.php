@@ -19,8 +19,14 @@ class Consulta_mysql
 
 	public static function &conectar($h, $u, $p, $bbdd)
 	{
-		$conexion=mysql_connect($h, $u, $p) or die('ERROR: No se puede establecer conexion con la base de datos');
-		mysql_select_db($bbdd, $conexion) or die('ERROR: No se encuentra la base de datos especificada');
+		$conexion=@mysql_connect($h, $u, $p);
+		if(!$conexion) {
+			throw new Excepcion_consulta_mysql('No se puede establecer conexion con la base de datos', 0);
+		}
+
+		if(!mysql_select_db($bbdd, $conexion)) {
+			throw new Excepcion_consulta_mysql('ERROR: No se encuentra la base de datos especificada', 0);
+		}
 
 		return $conexion;
 	}
