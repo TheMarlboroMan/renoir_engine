@@ -1,26 +1,14 @@
 <?php
-interface Contrato_emails
-{
-	function CUERPO_HTML();
-}
-
-/**
-Autor: Daniel Pastor Romero
-Fecha creación: 4-Nov-2010
-Fecha última modificación: -
-
-Funcionalidad: La clase email con adjuntos y textos alternativos, hecha a partir
-de la clase Email_contacto inicial que teníamos en algún lado... No podemos
-instanciarla y es poco más que el marco de funcionamiento para extenderla a las
-clases que necesitamos en cada proyecto.
-**/
-
 abstract class Email_base
 {
+	const NL="\r\n";
+
 	protected $origen=false;
 	protected $cabeceras=false;
 	protected $email_origen=false;
+	protected $nombre_remitente=false;
 	protected $dominio_origen=false;
+	protected $email_reply_to=false;
 	protected $asunto=false;
 	protected $exitos=0;
 	protected $fallos=0;
@@ -29,29 +17,63 @@ abstract class Email_base
 	protected $array_adjuntos=array();	//Contendrá directamente los objetos...
 	protected $hash=null;
 
-	protected $texto_plano=null;
-	protected $html_cuerpo=false;	
+	private $texto_plano=null;
+	private $html_cuerpo=false;
 
-	function __construct()
-	{
+	//Cosas para SMTP... Lo sé, lo sé...
+	private $autenticado=true;
+	private $smtp_servidor="mail.server.com";
+	private $smtp_usuario="email@server.com";
+	private $smtp_pass="****";
+	private $smtp_puerto=587;
+
+	function __construct(){
 		$this->hash=str_shuffle(md5(date('U')));
 	}
 
+	public function get_html_cuerpo() {return $this->html_cuerpo;}
+
 	public function establecer_asunto($asunto) {$this->asunto=$asunto;}
-	public function establecer_texto_plano($valor) {$this->texto_plano=$valor;}		
-	public function acc_texto_ensamblado() {return $this->ensamblar_correo();}	
-	public function acc_exitos() {return $this->exitos;}
-	public function acc_fallos() {return $this->fallos;}
+	public function establecer_html_cuerpo($datos) {$this->html_cuerpo=$datos;}
+	public function establecer_texto_plano($valor) {$this->texto_plano=$valor;}
+	public function establecer_nombre_remitente($valor) {$this->nombre_remitente=$valor;}
+
+	protected function establecer_smtp_puerto($puerto){$this->smtp_puerto=$puerto;}
+	protected function establecer_smtp_servidor($servidor){$this->smtp_servidor=$servidor;}
+	protected function establecer_smtp_usuario($usuario){$this->smtp_usuario=$usuario;}
+	protected function establecer_smtp_pass($pass){$this->smtp_pass=$pass;}
+
+	protected function establecer_autenticado($valor) {$this->autenticado=$valor;}
+	protected function acc_texto_ensamblado() {return $this->ensamblar_correo();}
+	protected function acc_exitos() {return $this->exitos;}
+	protected function acc_fallos() {return $this->fallos;}
 
 	public function establecer_destinatario($email)
 	{
-		if(strlen($email)) $this->array_destinos[]=$email;
+		if($email!='')
+		{
+			$this->array_destinos[]=$email;
+		}
 	}
 
-	public function establecer_origen($mail, $dominio)
+	public function establecer_origen($mail, $dominio=null)
 	{
-		$this->email_origen=$mail;
-		$this->dominio_origen=$dominio;	
+		if($mail && $dominio)
+		{
+			$this->email_origen=$mail;
+			$this->dominio_origen=$dominio;	
+		}
+		else
+		{
+			$completo=explode('@', $mail);
+			$this->email_origen=$completo[0];
+			$this->dominio_origen=$completo[1];
+		}
+	}
+
+	public function establecer_reply_to($valor)
+	{
+		$this->email_reply_to=$valor;
 	}
 
 	private function montar_cabeceras($tipo)
@@ -73,8 +95,18 @@ TIPO;
 			break;
 		}
 
+		$cabecera_reply_to=null;
+
+		if(strlen($this->email_reply_to))
+		{
+			$cabecera_reply_to=<<<R
+
+Reply-To: <{$this->email_reply_to}>
+R;
+		}
+
 		$this->cabeceras=<<<CABECERAS
-From:{$this->email_origen}@{$this->dominio_origen}
+From: {$this->nombre_remitente} <{$this->email_origen}@{$this->dominio_origen}>{$cabecera_reply_to}
 MIME-Version: 1.0
 {$cabecera_tipo}
 CABECERAS;
@@ -88,18 +120,148 @@ CABECERAS;
 		}
 		else
 		{
-			//Vamos a ensamblar el correo...
-			$correo_enviar=$this->ensamblar_correo();
+			$stream_enviar=$this->ensamblar_stream_correo();
 
 			foreach($this->array_destinos as $clave => $valor)
 			{
-				if(mail($valor, $this->asunto, $correo_enviar, $this->cabeceras)) $this->exitos++;
-				else $this->fallos++;
+				if(!$this->autenticado)
+				{
+					fseek($stream_enviar, 0);
+					$texto_enviar=null;
+					while(!feof($stream_enviar)) $texto_enviar.=fread($stream_enviar, 1024);
+
+					if($this->enviar_clasico($valor, $texto_enviar)) $this->exitos++;
+					else $this->fallos++;
+				}
+				else
+				{
+					if($this->enviar_smtp($valor, $stream_enviar)) $this->exitos++;
+					else $this->fallos++;
+				}
 			}
 			
 			if($this->exitos==0) {return false;}
 			else {return $this->exitos;}
+
+			fclose($stream_enviar);
 		}		
+	}
+
+	protected function enviar_clasico($email, &$correo_enviar)
+	{			
+		if(mail($email, $this->asunto, $correo_enviar, $this->cabeceras)) return true;
+		else return false;
+	}
+
+	private static function enviar_comando_smtp(&$SOCKET, $texto)
+	{
+		fputs($SOCKET, $texto);
+	}
+
+	private static function recibir_respuesta_smtp(&$SOCKET, &$verbosidad)
+	{
+	        while(is_resource($SOCKET) && !feof($SOCKET)) 
+		{
+			$temp=fgets($SOCKET);
+			$verbosidad.=$temp.self::NL;
+			if ((isset($temp[3]) && $temp[3] == ' ')) break;
+		};
+	}
+
+	protected function enviar_smtp($destinatario, &$stream_enviar)
+	{
+		$puerto=$this->smtp_puerto;
+		$servidor=$this->smtp_servidor;
+		$pass=$this->smtp_pass;
+		$usuario=$this->smtp_usuario;
+
+		$usuario_64=base64_encode($usuario);
+		$pass_64=base64_encode($pass);
+
+//		$SOCKET=fsockopen($servidor, $puerto);
+
+		$opciones=array(); //.... Para mirarlo en el futuro.
+		$contexto = stream_context_create($opciones);
+
+		$errno=0;
+		$errstr='';
+		$timeout=30;
+
+		$SOCKET=stream_socket_client(
+			$servidor.":".$puerto,
+			$errno,
+			$errstr,
+			$timeout,
+			STREAM_CLIENT_CONNECT,
+			$contexto);
+
+		//Diversión con sockets. Como en los viejos tiempos.
+		if($SOCKET)
+		{
+			$respuestas=null;
+
+			self::recibir_respuesta_smtp($SOCKET, $respuestas);
+
+			self::enviar_comando_smtp($SOCKET, "EHLO ".$servidor.self::NL);
+			self::recibir_respuesta_smtp($SOCKET, $respuestas);
+
+			self::enviar_comando_smtp($SOCKET, "STARTTLS".self::NL);
+			self::recibir_respuesta_smtp($SOCKET, $respuestas);
+
+			if(!stream_socket_enable_crypto($SOCKET, true, STREAM_CRYPTO_METHOD_TLS_CLIENT))
+			{
+				return false;
+			}
+
+			self::enviar_comando_smtp($SOCKET, "EHLO ".$servidor.self::NL);
+			self::recibir_respuesta_smtp($SOCKET, $respuestas);
+
+			self::enviar_comando_smtp($SOCKET, "AUTH LOGIN".self::NL);
+			self::recibir_respuesta_smtp($SOCKET, $respuestas);
+
+			self::enviar_comando_smtp($SOCKET, $usuario_64.self::NL);
+			self::recibir_respuesta_smtp($SOCKET, $respuestas);
+
+			self::enviar_comando_smtp($SOCKET, $pass_64.self::NL);
+			self::recibir_respuesta_smtp($SOCKET, $respuestas);
+
+			self::enviar_comando_smtp($SOCKET, "MAIL FROM: <".$usuario.">".self::NL);
+			self::recibir_respuesta_smtp($SOCKET, $respuestas);
+
+			self::enviar_comando_smtp($SOCKET, "RCPT TO: <".$destinatario.">".self::NL);
+			self::recibir_respuesta_smtp($SOCKET, $respuestas);
+
+			//Solicitamos envío de datos.
+			self::enviar_comando_smtp($SOCKET, "DATA".self::NL);
+			self::recibir_respuesta_smtp($SOCKET, $respuestas);
+
+			//Enviamos los datos...
+			$CABECERA_COMPUESTA="To: <".$destinatario.">".self::NL."Subject:".$this->asunto.self::NL.$this->cabeceras.self::NL.self::NL;
+			self::enviar_comando_smtp($SOCKET, $CABECERA_COMPUESTA);
+
+			fseek($stream_enviar, 0);
+			while(!feof($stream_enviar))
+			{
+				$TROZO=fread($stream_enviar, 1024);
+				fwrite($SOCKET, $TROZO, 1024);
+			}
+
+			//Fin de la comunicación de datos...
+			self::enviar_comando_smtp($SOCKET, self::NL.self::NL.'.'.self::NL);
+			self::recibir_respuesta_smtp($SOCKET, $respuestas);
+
+			//Cerramos y nos largamos.
+			self::enviar_comando_smtp($SOCKET, "QUIT".self::NL);
+			fclose($SOCKET);
+
+			$resultado=true;
+		}
+		else
+		{
+			$resultado=false;
+		}
+
+		return $resultado;
 	}
 
 	private function ensamblar_texto_html()
@@ -141,25 +303,31 @@ TEXTO_PLANO;
 		}
 	}
 
-	private function ensamblar_correo()
+//Intenta ensamblar un correo con las partes que se hayan dado.
+//Parámetros: ninguno.
+//Retorno: Un stream con el correo.
+
+	private function &ensamblar_stream_correo()
 	{		
-		//Declaración de variables...
+		//Abrimos el stream.
+		$stream=fopen('data://text/plain,', 'w');
+
 		$texto_html=null;
-		$texto_adjuntos=null;
-		$texto_plano=null;
-
-		//Vamos a hacer un montaje de toda la sección de texto del email
-		//El texto plano viene tal cual. El texto HTML se pondrá como
-		//plano si no determinamos nada.
-
-		$texto_plano=$this->ensamblar_texto_plano();
-			
 		if($this->html_cuerpo) $texto_html=$this->ensamblar_texto_html();
-		else $texto_html=$this->texto_plano;	//TODO...
-		
-		$total_textos=<<<TEXTOS
+		else $texto_html=$this->texto_plano;
+
+		//Si tenemos adjuntos necesitamos un tipo de cabeceras
+		//y una estructura. Si no es otra...
+
+		if(!count($this->array_adjuntos))
+		{
+			//Si no hay adjuntos tan sólo tenemos que poner el texto.
+
+			$this->montar_cabeceras('alternative');
+
+			$total_textos=<<<TEXTOS
 --<parte-texto-{$this->hash}>
-{$texto_plano}
+{$this->ensamblar_texto_plano()}
 
 --<parte-texto-{$this->hash}>
 {$texto_html}
@@ -167,65 +335,77 @@ TEXTO_PLANO;
 --<parte-texto-{$this->hash}>--
 TEXTOS;
 
-		//Una vez ensamblada la parte de texto comprobaremos si hay
-		//adjuntos y montaremos las cabeceras como sea conveniente de
-		//acuerdo con las piezas que ya tenemos.
-
-		if(count($this->array_adjuntos))
-		{	
+			fputs($stream, $total_textos);
+		}
+		else
+		{
+			//Si hay adjuntos es algo más complejo.
 			$this->montar_cabeceras('mixed');
-			foreach($this->array_adjuntos as $clave => $valor)
-			{
-				$texto_adjuntos.=$valor->devolver_codificado($this->hash);
-			}
-
-			//Ensamblaje final con adjuntos... Dado que la cabecera
-			//del email llevará el tipo "mixed" ahora ponemos que
-			//la parte del mixed del texto es alternative, a mano.
-			//Simplemente modificamos el ensamblado final de texto.
 
 			$total_textos=<<<TOTAL_TEXTOS
+--<parte-email-{$this->hash}>
 Content-Type: multipart/alternative; boundary="<parte-texto-{$this->hash}>"
-{$total_textos}
+--<parte-texto-{$this->hash}>
+{$this->ensamblar_texto_plano()}
+
+--<parte-texto-{$this->hash}>
+{$texto_html}
+
+--<parte-texto-{$this->hash}>--
+
 TOTAL_TEXTOS;
 
-			$resultado=<<<TEXTO
---<parte-email-{$this->hash}>
-{$total_textos}
-{$texto_adjuntos}
+			fputs($stream, $total_textos);
+
+			//Ahora vienen los adjuntos...
+			foreach($this->array_adjuntos as $clave => $valor)
+			{
+				$valor->stream_archivo($stream, $this->hash);
+			}
+
+			//Y ahora cerrar.
+			$cierre=<<<TEXTO
+
 --<parte-email-{$this->hash}>--
+
 TEXTO;
-
+			fputs($stream, $cierre);
 		}
-		//Ensamblaje final sin adjuntos... No hay mucho que hacer...
-		else 			
-		{
-			$this->montar_cabeceras('alternative');
-			$resultado=$total_textos;
-		}		
 
-		return $resultado;	
+		return $stream;
 	}
 };
 
 class Adjunto_email
 {
+	private $archivo=null;
 	private $tipo_mime='';
 	private $nombre_archivo='';
-	private $archivo_base_64='';
+	private $ruta=null;
 
-	public function __construct() {}
+	const TAM_PEDAZO=1024;
+
+	public function __construct()
+	{
+
+	}
+
+	public function __destruct()
+	{
+		if($this->archivo) fclose($this->archivo);
+	}
 
 	public function cargar_por_ruta($ruta, $nombre_final=null)
 	{
-		$archivo=fopen($ruta, 'rb');
+		$this->archivo=fopen($ruta, 'rb');
 		
-		if(!$archivo)
+		if(!$this->archivo)
 		{
 			$resultado=false;
 		}
 		else
 		{
+			$this->ruta=$ruta;
 			$this->tipo_mime=self::tipo_mime($ruta);
 			
 			if($nombre_final)
@@ -237,10 +417,6 @@ class Adjunto_email
 				$partido=explode("/", $ruta);
 				$this->nombre_archivo=$partido[count($partido)-1];
 			}
-
-			$tamano=filesize($ruta);
-			$this->archivo_base_64=chunk_split(base64_encode(fread($archivo, $tamano)));
-			fclose($archivo);		
 	
 			$resultado=true;
 		}
@@ -248,22 +424,31 @@ class Adjunto_email
 		return $resultado;
 	}
 	
-	public function &devolver_codificado($hash)
+	public function stream_archivo(&$stream, $hash)
 	{
-		$charset=$this->tipo_mime=='text/plain' ? 'charset=iso-8859-1; ' : null;
+		if(!$this->archivo)
+		{
+			return;
+		}
+		else
+		{
+			$charset=$this->tipo_mime=='text/plain' ? 'charset=iso-8859-1; ' : null;
 
-		$resultado=<<<ADJUNTO
+			$CABECERA=<<<ADJUNTO
 
 --<parte-email-$hash>
 Content-Type: {$this->tipo_mime}; {$charset}name="{$this->nombre_archivo}"
 Content-Disposition: attachment; filename="{$this->nombre_archivo}"
 Content-Transfer-Encoding: base64
 
-{$this->archivo_base_64}
+
 ADJUNTO;
 
-		return $resultado;
-	}	
+			fputs($stream, $CABECERA);
+			$tamano=filesize($this->ruta);
+			fputs($stream, chunk_split(base64_encode(fread($this->archivo, $tamano))));
+		}
+	}
 
 	public static function tipo_mime($archivo)
 	{
@@ -280,93 +465,4 @@ ADJUNTO;
 		return Herramientas::determinar_xtype($ext);
 	}
 };
-
-class Email_test extends Email_base implements Contrato_emails
-{
-	//Estos son los datos que tendrá este email, por ejemplo...
-	private $html_title=false;
-	private $html_titulo=false;
-	private $html_destacado=false;
-	private $html_texto=false;
-
-	//Esto realmente no hace falta puesto que podemos manipular los valores
-	//desde los métodos de la clase...
-	private function establecer_html_title($valor) {$this->html_title=$valor;}
-	private function establecer_html_titulo($valor) {$this->html_titulo=$valor;}
-	private function establecer_html_destacado($valor) {$this->html_destacado=$valor;}
-	private function establecer_html_texto($valor) {$this->html_texto=$valor;}
-
-	public function CUERPO_HTML() 
-	{	
-		$destacado=null;
-		if($this->html_destacado)
-		{
-			$destacado=<<<DESTACADO
-		<div id="destacado" style="margin:20px auto; width:700px; background-color: #DDCCAA; font-weight: bold">
-			{$this->html_destacado}
-		</div>
-DESTACADO;
-		}
-
-
-		$this->html_cuerpo=<<<MAQUETACION
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xml:lang="es" lang="es">
-<head>
-	<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1" />
-	<title>{$this->html_title}</title>
-</head>
-<body bgcolor="#cbd0d0">
-	<div id="email" style="margin:20px auto; width:700px; background-color: gray;">
-		<div id="titulo" style="margin:20px auto; width:700px; background-color: #DDCCDD;">
-			{$this->html_titulo}
-		</div>
-
-		{$destacado}
-
-		<div class="main" style="margin:20px auto; width:700px; background-color: #DDCCDD;">
-			{$this->html_texto}
-		</div>
-		<div class="pie">
-		Pie...
-		</div>
-	</div>
-</body>
-</html>
-MAQUETACION;
-	}
-
-	public function test_adjunto()
-	{
-		$this->establecer_html_title('TITLE HTML');
-		$this->establecer_html_titulo('TITULO HTML');
-		$this->establecer_html_destacado('destacado');
-		$this->establecer_html_texto('texto texto texto...');
-		$this->establecer_texto_plano("ESTE ES EL TEXTO PLANO");
-		$this->establecer_origen('no-reply', 'dominio');
-		$this->establecer_asunto('TEST ASUNTO');
-		$this->establecer_destinatario('email@email.com');
-
-		$this->adjuntar_archivo_por_ruta('test_2.txt');
-		$this->adjuntar_archivo_por_ruta('test.txt');
-
-		$this->CUERPO_HTML();
-		$this->enviar();		
-	}
-
-	public function test_no_adjunto()
-	{
-		$this->establecer_html_title('TITLE HTML');
-		$this->establecer_html_titulo('SIN ADJUNTO');
-		$this->establecer_html_destacado('destacado');
-		$this->establecer_html_texto('texto texto texto...');
-		$this->establecer_texto_plano("ESTE ES EL TEXTO PLANO");
-		$this->establecer_origen('no-reply', 'dominio');
-		$this->establecer_asunto('SIN ADJUNTO');
-		$this->establecer_destinatario('email@email.com');
-
-		$this->CUERPO_HTML();
-		$this->enviar();		
-	}
-}
 ?>

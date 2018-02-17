@@ -1,4 +1,5 @@
 <?php
+//TODO: This system must dissapear.
 class Constantes_renoir_engine
 {
 	const RUTA_ENGINE='/opt/lampp/htdocs/renoir_engine/';
@@ -25,4 +26,6 @@ require(Constantes_renoir_engine::RUTA_ENGINE.'class_motor/abstraccion_relacion_
 
 require(Constantes_renoir_engine::RUTA_ENGINE.'class_motor/excepcion_ficheros.exception.php');
 require(Constantes_renoir_engine::RUTA_ENGINE.'class_motor/excepcion_consulta_mysql.exception.php');
+
+require(Constantes_renoir_engine::RUTA_ENGINE.'class_motor/ini_config.class.php');
 ?>
