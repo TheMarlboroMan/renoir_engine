@@ -1,14 +1,11 @@
 <?php
-/*
-Una consulta para mysql... Pasa por un filtrado todos los textos para detectar
-posibles inyecciones siempre que se cumplan las condiciones (cada where, por 
-ejemplo, en una línea...).
-*/
-class Consulta_mysql
-{
+namespace Renoir_engine\Database;
+
+class Database_query {
+
 	protected $conexion=null;
-	protected $texto=null;			
-	protected $consulta;			
+	protected $texto=null;
+	protected $consulta;
 	protected $array_resultados=array();
 	protected $filas=-1;
 	protected $tipo;
@@ -17,6 +14,7 @@ class Consulta_mysql
 	public function acc_texto() {return $this->texto;}
 	public function acc_consulta() {return $this->consulta;}
 
+	//TODO: nooope.
 	public static function &conectar($h, $u, $p, $bbdd)
 	{
 		$conexion=@mysql_connect($h, $u, $p);
@@ -215,4 +213,5 @@ SELECT LAST_INSERT_ID() AS id";
 		return $consulta->filas();
 	}
 }
-?>
+
+}

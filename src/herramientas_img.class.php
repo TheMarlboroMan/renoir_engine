@@ -389,7 +389,7 @@ $minimo_domina -> establece si domina el valor menor de modo que la dimension me
 		return $resultado;
 	}
 
-	public static function marcar_agua($ruta)
+	public static function marcar_agua($ruta, $marca_agua)
 	{
 		$imagen=self::recurso_desde_ruta($ruta);
 		if(!$imagen)
@@ -398,7 +398,7 @@ $minimo_domina -> establece si domina el valor menor de modo que la dimension me
 		}
 		else
 		{
-			$resultado=self::marcar_agua_desde_recurso($imagen, Constantes_app::RUTA_SERVER.'img/marca_agua.png');
+			$resultado=self::marcar_agua_desde_recurso($imagen, $marca_agua);
 		
 			$formato=explode('.', $ruta);
 			$formato=$formato[count($formato)-1];

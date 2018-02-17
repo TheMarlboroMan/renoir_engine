@@ -75,21 +75,21 @@ class Idioma
 		}
 	}
 
-	private function incluir($valor)
+	private function incluir($valor, $server_path)
 	{
-		$temp=include(Constantes::RUTA_SERVER.'lan/'.$this->idioma.'/'.$valor.'.lan.php');
+		$temp=include($server_path.'lan/'.$this->idioma.'/'.$valor.'.lan.php');
 		return $temp;
 	}
 
-	private function generar(&$array_carga, &$destino)
+	private function generar(&$array_carga, &$destino, $server_path)
 	{
 		if(is_array($array_carga))
 		{
 			foreach($array_carga as $clave => &$valor)
 			{
-				if(!is_array($valor))		
+				if(!is_array($valor))
 				{
-					$ruta=Constantes::RUTA_SERVER.'lan/'.$this->idioma.'/'.$valor.'.lan.php';
+					$ruta=$server_path.'lan/'.$this->idioma.'/'.$valor.'.lan.php';
 					if(file_exists($ruta) && is_file($ruta))
 					{
 						$temp=null;

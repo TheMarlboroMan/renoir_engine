@@ -3,11 +3,11 @@ namespace Renoir_Engine;
 
 class Ini_config {
 
-	private $data;
+	private $data=null;
 
 	public function	__construct($_path) {
 
-		$this->data=parse_ini_file($_path);
+		$this->data=@parse_ini_file($_path);
 		if(!$this->data) {
 			throw new \Exception("Error parsing ".$_path." for Ini_config");
 		}

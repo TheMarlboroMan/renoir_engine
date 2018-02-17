@@ -1,31 +1,32 @@
 <?php
-//TODO: This system must dissapear.
-class Constantes_renoir_engine
-{
-	const RUTA_ENGINE='/opt/lampp/htdocs/renoir_engine/';
-};
 
-require(Constantes_renoir_engine::RUTA_ENGINE.'class_motor/contrato_bbdd.interface.php');
-require(Constantes_renoir_engine::RUTA_ENGINE.'class_motor/consulta_mysql.class.php');
-require(Constantes_renoir_engine::RUTA_ENGINE.'class_motor/comunicacion_bbdd.class.php');
-require(Constantes_renoir_engine::RUTA_ENGINE.'class_motor/manejador_propiedades.abstract.class.php');
-require(Constantes_renoir_engine::RUTA_ENGINE.'class_motor/contenido_bbdd.class.php');
-require(Constantes_renoir_engine::RUTA_ENGINE.'class_motor/contenido_bbdd_dinamico.class.php');
-require(Constantes_renoir_engine::RUTA_ENGINE.'class_motor/paginacion.class.php');
-require(Constantes_renoir_engine::RUTA_ENGINE.'class_motor/contenedor_variables.class.php');
-require(Constantes_renoir_engine::RUTA_ENGINE.'class_motor/base_textos_sql.abstract.class.php');
+/* Old stuff... */
 
-require(Constantes_renoir_engine::RUTA_ENGINE.'class_motor/herramientas.class.php');
-require(Constantes_renoir_engine::RUTA_ENGINE.'class_motor/herramientas_html.class.php');
-require(Constantes_renoir_engine::RUTA_ENGINE.'class_motor/herramientas_img.class.php');
+require_once('src/contrato_bbdd.interface.php');
+require_once('src/consulta_mysql.class.php');
+require_once('src/comunicacion_bbdd.class.php');
+require_once('src/manejador_propiedades.abstract.class.php');
+require_once('src/contenido_bbdd.class.php');
+require_once('src/contenido_bbdd_dinamico.class.php');
+require_once('src/paginacion.class.php');
+require_once('src/contenedor_variables.class.php');
+require_once('src/base_textos_sql.abstract.class.php');
 
-require(Constantes_renoir_engine::RUTA_ENGINE.'class_motor/idioma.class.php');
-require(Constantes_renoir_engine::RUTA_ENGINE.'class_motor/email_base.class.php');
-require(Constantes_renoir_engine::RUTA_ENGINE.'class_motor/abstraccion_archivo.class.php');
-require(Constantes_renoir_engine::RUTA_ENGINE.'class_motor/abstraccion_relacion_m_n.class.php');
+require_once('src/herramientas.class.php');
+require_once('src/herramientas_html.class.php');
+require_once('src/herramientas_img.class.php');
 
-require(Constantes_renoir_engine::RUTA_ENGINE.'class_motor/excepcion_ficheros.exception.php');
-require(Constantes_renoir_engine::RUTA_ENGINE.'class_motor/excepcion_consulta_mysql.exception.php');
+require_once('src/idioma.class.php');
+require_once('src/email_base.class.php');
+require_once('src/abstraccion_archivo.class.php');
+require_once('src/abstraccion_relacion_m_n.class.php');
 
-require(Constantes_renoir_engine::RUTA_ENGINE.'class_motor/ini_config.class.php');
+require_once('src/excepcion_ficheros.exception.php');
+require_once('src/excepcion_consulta_mysql.exception.php');
+
+require_once('src/ini_config.class.php');
+
+/* New stuff... */
+
+
 ?>

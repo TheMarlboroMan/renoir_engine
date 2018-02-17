@@ -139,10 +139,8 @@ abstract class Contenido_bbdd extends Manejador_propiedades implements Contrato_
 	{
 		$resultado=new Consulta_mysql();
 		$resultado->consultar($texto);
-
 		return $resultado;
 	}
-
 
 	final public function &obtener_array_objetos($texto)
 	{
@@ -177,30 +175,5 @@ abstract class Contenido_bbdd extends Manejador_propiedades implements Contrato_
 
 		return $resultado;
 	}
-/*
-	final public static function &obtener_array_objetos_clave_id($nombre_clase, $texto=null)
-	{
-		if(!$texto)
-		{
-			$texto="
-			SELECT *
-			FROM ".$this->TABLA."
-			ORDER BY ".$this->ID;
-		}
-
-		$consulta=self::obtener_consulta($texto);
-		
-		$resultado=array();
-
-		while($consulta->leer())
-		{
-			$datos=$consulta->resultados();
-			$temp=new $nombre_clase($datos);
-			$resultado[$temp->ID_INSTANCIA()]=$temp;
-		}
-
-		return $resultado;
-	}
-*/
 }
 ?>
