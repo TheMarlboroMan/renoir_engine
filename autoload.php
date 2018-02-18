@@ -28,5 +28,5 @@ require_once('src/ini_config.class.php');
 
 /* New stuff... */
 
-
+require_once("src/orm/autoload.php");
 ?>
