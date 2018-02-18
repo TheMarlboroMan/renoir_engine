@@ -1,0 +1,12 @@
+<!doctype HTML>
+<html>
+<head>
+</head>
+<body>
+<h1>This is the header</h1>
+<p>This should be something about array indexing:{{arrvar1.s_1.thing>arr.objs.0>val}}</p>
+<p>This should be something about array indexing:{{arrvar1.s_1.thing>arr.objs.1*call_me}}</p>
+<p>This should be var1:{{strvar1}}</p>
+<p>This should be something about array indexing:{{arrvar1.k1}}</p>
+</body>
+</html> 
