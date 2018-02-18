@@ -3,6 +3,9 @@ namespace Renoir_engine\View;
 
 //TODO: Document.
 
+//TODO: Add support for including other views and pass on their variables??
+//TODO: Add support for view inheritance.
+
 //Supports:
 //	. array key indirection or numeric index indirection...
 //	> object property indirection
@@ -30,17 +33,20 @@ class View {
 
 	public function render() {
 	
-		//TODO: Check.
+		//TODO: Check that the file exists.
 		$this->parse(file_get_contents($this->filename));
 	}
 
+	//Parses the template file and returns its resolution.
 	protected function parse($str_template) {
 
+		//Locate the replacement tags and resolve to their values.
 		$regexp="/{{(.+)}}/";
-		echo preg_replace_callback($regexp, [$this, 'resolve_value'], $str_template);
-		die();
+		//TODO: What about the headers?????
+		return preg_replace_callback($regexp, [$this, 'resolve_value'], $str_template);
 	}
 
+	//Resolves a value by following a path from the $values array.
 	private function resolve_value($match) {
 
 		$ref=null;
@@ -50,8 +56,6 @@ class View {
 		if(!array_key_exists($key, $this->values)) {
 			throw new View_exception("Key '".$key."' does not exist in view");
 		}
-
-//arrvar1.s_1.thing>arr.objs.3>val
 
 		$ref=&$this->values[$key];
 		for($i=1; $i<count($parts); $i+=2) {

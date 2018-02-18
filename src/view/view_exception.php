@@ -1,7 +1,7 @@
 <?php
 namespace Renoir_engine\View;
 
-//TODO: Document.
+//Exception that will be thrown when something of the View namespace fails.
 
 class View_exception extends \Exception {
 

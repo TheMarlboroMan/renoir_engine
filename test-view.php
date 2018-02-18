@@ -23,7 +23,7 @@ class Thing {
 }
 
 $v=new Renoir_engine\View\View();
-$v->set_template_file("template-view.rtp")
+echo $v->set_template_file("template-view.rtp")
 	->set('strvar1', 'Hola')
 	->set('strvar2', 'Adios')
 	->set('arrvar1', ['k1' => 'Key 1', 's_1' => ['k2' => 'Key2', 'thing' => new Thing()]])
