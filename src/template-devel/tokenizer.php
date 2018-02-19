@@ -72,8 +72,8 @@ class Tokenizer {
 	const RESERVED_OPEN_INTERPRETER='{{';
 	const RESERVED_CLOSE_INTERPRETER='}}';
 	const RESERVED_PUT='put';
-	const RESERVED_FOR='for';
-	const RESERVED_ENDFOR='endfor';
+	const RESERVED_FOREACH='foreach';
+	const RESERVED_ENDFOREACH='endforeach';
 	const RESERVED_AS='as';
 
 	private $reader;
@@ -166,10 +166,10 @@ class Tokenizer {
 		switch($chunk) {
 			case self::RESERVED_PUT:
 				return new Token_put; break;
-			case self::RESERVED_FOR:
-				return new Token_for; break;
-			case self::RESERVED_ENDFOR:
-				return new Token_endfor; break;
+			case self::RESERVED_FOREACH:
+				return new Token_foreach; break;
+			case self::RESERVED_ENDFOREACH:
+				return new Token_endforach; break;
 			case self::RESERVED_AS:
 				return new Token_as; break;
 			default:

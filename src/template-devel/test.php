@@ -5,28 +5,18 @@ require("reader.php");
 require("exception.php");
 require("parser.php");
 
-/* Okay, good so far, next we are going to try to tokenize a few basic things
-we want in the code... i'd like to start with putting stuff out... Now, If
-I parse "expression" as EVERYTHING that is not a keyword, by default
-expression would... print its result. Maybe I would do better with a reserved 
-word like "put".. So lets do
-
+/*
 {{put value}}
 
-{{
-for expression as value 
-}}
-	<p>This is {{value}}</p>
-{{
-endfor
-}}
+{{if expression predicate expression}}
+{{endif}
 
-That teaches me that every single token must be separated by some whitespace.
-Good... I read until I reach a whitespace. Then skip the rest of whitespace.
+{{if expression predicate expression}}
+{{else}}
+{{endif}
 
-{{if value is shit then value else "shit" endif}}
-
-
+{{foreach expression as value}}
+{{endforeach}}
 */
 
 class UseCase {
@@ -112,8 +102,12 @@ R;
 	$t=Tokenizer::from_string($test);
 
 	$p=new Parser;
-	$p->set_var('myvar', 'this is a variable!!!');
-	$p->parse($t->tokenize());
+	$root=$p->parse($t->tokenize());
+
+	do{
+		print_r($root);
+		$root=$root->next;
+	}while($root!=null);
 }
 catch(Exception $e) {
 	echo 'Error: '.$e->getMessage();

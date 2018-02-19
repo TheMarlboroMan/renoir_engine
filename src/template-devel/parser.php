@@ -1,80 +1,97 @@
 <?php
-//This is the parser...
+abstract class Operation {
+	public $next=null;
+}
+
+//TODO: This should be the root, actually, perhaps we can dispose of it.
+class Operation_noop extends Operation {
+
+}
+
+class Operation_passthrough extends Operation {
+	public $value='';
+	public function __construct($val) {$this->value=$val;}
+}
+
+class Operation_put extends Operation {
+	public $expression;
+	public function __construct($exp) {$this->expression=$exp;}
+}
+
 class Parser {
 
-	private $vars=[];
 	private $current=0;
-	private $tokens=[];
+	private $root_operation=null;
+	private $current_operation=null;
 
 	public function __construct() {
-
+		$this->root_operation=new Operation_noop;
+		$this->current_operation=$this->root_operation;
 	}
 
-	public function set_var($key, $value) {
-		$this->vars[$key]=$value;
-	}
-
-	//This should actually parse AND execute...
+	//This should actually just parse and create an execution tree, not execute.
+	//We'd need another component that does the execution.
 	public function parse(array $_t) {
-
-		$this->tokens=$_t;
-		while($this->current < count($this->tokens)) {
-			$this->process($this->tokens[$this->current]);
-		}
+		return $this->process($_t);
 	}
 
-	private function process($tok) {
+	private function process(array &$_t) {
 
-		switch(get_class($tok)) {
-			case Token_passthrough::class:
-				$this->do_passthrough($tok);
-			break;
-			case Token_put::class:
-				$this->do_put();
-			break;
-			default:
-				$this->fail('Unknown token '.get_class($tok)); 
-			break;
+		if(!count($_t)) {
+			//This is the end condition...
+			return $this->root_operation;
+		}
+		else {
+			switch(get_class($_t[0])) {
+				case Token_passthrough::class:
+					return $this->do_passthrough($_t); break;
+				case Token_put::class:
+					return $this->do_put($_t); break;
+				/*
+				case Token if
+					$lhe=this->must_follow(expr); 
+					$pred¡cate=$this->must_follow(predicate);
+					$rhe=this->must_be(expr);
+					$this->must_follow(then);
+					//TODO: What now????
+					$this->must_follow(endif);
+				*/
+				default:
+					$this->fail('Unknown token '.get_class($tok)); 
+				break;
+			}
 		}
 	}
 	
-	private function do_passthrough(Token_passthrough $tok) {
-		echo $tok->contents;
-		$this->advance();
+	private function do_passthrough(array &$_t) {
+		$this->new_operation(new Operation_passthrough($this->shift($_t)->contents));
+		return $this->process($_t);
 	}
 
-	private function do_put() {
-		$this->advance();
-		$expr=$this->must_be(Token_expression::class);
-		//Echo expression resolve...
-		echo $this->resolve_expression($expr->expression);
-		$this->advance();
+	private function do_put(array &$_t) {
+		$this->shift($_t); //Remove Token_put
+		$this->new_operation(new Operation_put($this->shift_must_be($_t, Token_expression::class)->expression));
+		return $this->process($_t);
 	}
 
-	//Checks and returns.
-	private function must_be($type) {
-		if($this->current >= count($this->tokens)) {
-			$this->fail('must_be found no token');
+	private function new_operation($obj) {
+		$this->current_operation->next=$obj;
+		$this->current_operation=$this->current_operation->next;
+	}
+
+	private function shift(array &$_t) {
+		if(!count($_t)) {
+			$this->fail("premature end!");
 		}
-
-		$cur=$this->tokens[$this->current];
-		if(get_class($cur) != $type) {
-			$this->fail('expected '.$type.', got'.get_class($dcur));
-		}
-		return $cur;
+		return array_shift($_t);
 	}
 
-	private function resolve_expression($expr) {
-
-		if(!array_key_exists($expr, $this->vars)) {
-			$this->fail('could not resolve expression '.$expr);
+	private function shift_must_be(array &$_t, $type) {
+		$tok=$this->shift($_t);
+		if(get_class($tok) != $type) {
+			$this->fail('expected '.$type.', got'.get_class($tok));
 		}
-
-		return $this->vars[$expr];
-	}
-
-	private function advance() {
-		++$this->current;
+		return $tok;
 	}
 
 	private function fail($msg) {

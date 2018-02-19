@@ -13,18 +13,7 @@ class Token_expression {
 	}
 }
 
-class Token_put {
-
-}
-
-class Token_for {
-
-}
-
-class Token_endfor {
-
-}
-
-class Token_as {
-
-}
+class Token_put {}
+class Token_foreach {}
+class Token_endforeach {}
+class Token_as {}
