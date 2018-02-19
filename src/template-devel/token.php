@@ -6,19 +6,15 @@ class Token_passthrough {
 	}
 }
 
-//TODO: Useless...
-class Token_code {
-	public $contents='';
-	public function __construct($_c) {
-		$this->contents=$_c;
-	}
-}
-
 class Token_expression {
 	public $expression;
 	public function __construct($_c) {
 		$this->expression=$_c;
 	}
+}
+
+class Token_put {
+
 }
 
 class Token_for {

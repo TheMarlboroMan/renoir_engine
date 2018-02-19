@@ -3,13 +3,30 @@ require("tokenizer.php");
 require("token.php");
 require("reader.php");
 require("exception.php");
+require("parser.php");
 
 /* Okay, good so far, next we are going to try to tokenize a few basic things
-we want in the code... i'd like to start with 
+we want in the code... i'd like to start with putting stuff out... Now, If
+I parse "expression" as EVERYTHING that is not a keyword, by default
+expression would... print its result. Maybe I would do better with a reserved 
+word like "put".. So lets do
 
-for expression as value endfor
+{{put value}}
 
-expression would be EVERYTHING that is not a keyword. Yeah, that cool.
+{{
+for expression as value 
+}}
+	<p>This is {{value}}</p>
+{{
+endfor
+}}
+
+That teaches me that every single token must be separated by some whitespace.
+Good... I read until I reach a whitespace. Then skip the rest of whitespace.
+
+{{if value is shit then value else "shit" endif}}
+
+
 */
 
 class UseCase {
@@ -38,7 +55,7 @@ class UseCase {
 	}
 };
 
-
+/*
 $cases=[
 	new UseCase("Full", 
 		"<p>First</p>{{second}}<p>Third</p>{{fourth}<p>Fifth</p>", 
@@ -72,6 +89,31 @@ try {
 	}
 	
 	echo 'All is good';
+}
+catch(Exception $e) {
+	echo 'Error: '.$e->getMessage();
+}
+*/
+
+try {
+/*	$test=<<<R
+<h1>Hello!!</h1>
+{{  for myvar as var put   var endfor}}
+<p>This is the end</p>
+R;
+*/
+
+	$test=<<<R
+<h1>Hello!!</h1>
+{{   put   myvar}}
+<p>This is the end</p>
+R;
+
+	$t=Tokenizer::from_string($test);
+
+	$p=new Parser;
+	$p->set_var('myvar', 'this is a variable!!!');
+	$p->parse($t->tokenize());
 }
 catch(Exception $e) {
 	echo 'Error: '.$e->getMessage();

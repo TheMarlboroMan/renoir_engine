@@ -69,6 +69,13 @@ class Tokenizer {
 	const MODE_LITERAL=1;
 	const MODE_INTERPRETER=2;
 
+	const RESERVED_OPEN_INTERPRETER='{{';
+	const RESERVED_CLOSE_INTERPRETER='}}';
+	const RESERVED_PUT='put';
+	const RESERVED_FOR='for';
+	const RESERVED_ENDFOR='endfor';
+	const RESERVED_AS='as';
+
 	private $reader;
 	private $parse_mode=self::MODE_LITERAL; //We assume we start out passing through what we read.
 
@@ -82,8 +89,8 @@ class Tokenizer {
 			$this->fail('Chunk cannot be empty for extract_mode_delimiter');
 		}
 
-		if('{{' == substr($chunk, -2)) return self::MODE_INTERPRETER;
-		else if ('}}' == substr($chunk, -2)) return self::MODE_LITERAL;
+		if(self::RESERVED_OPEN_INTERPRETER == substr($chunk, -2)) return self::MODE_INTERPRETER;
+		else if (self::RESERVED_CLOSE_INTERPRETER == substr($chunk, -2)) return self::MODE_LITERAL;
 		else return self::MODE_UNCHANGED;
 	}
 
@@ -108,25 +115,38 @@ class Tokenizer {
 
 		$buffer='';
 		do {
-			$this->read($buffer);
-		}while(!$this->reader->is_eof() && substr($buffer, -2)!='{{');
+			$buffer.=$this->reader->next();
+		}while(!$this->reader->is_eof() && substr($buffer, -2)!=self::RESERVED_OPEN_INTERPRETER);
 		return $buffer;
 
 	}
 
-	//Reads until EOF or the begin-code delimiter are found. 
-	//TODO: This will change... It will read different shit words and stuff...
+	//Reads the next token, which is either what happens before EOF, a
+	//close delimiter or a whitespace...
 	private function read_interpreter() {
 
+		$this->skip_whitespace();
 		$buffer='';
+		$cur='';
 		do {
-			$this->read($buffer);
-		}while(!$this->reader->is_eof() && substr($buffer, -2)!='}}');
+			$cur=$this->reader->next();
+
+			if(!ctype_space($cur)) {
+				$buffer.=$cur;
+			}
+		}while(!$this->reader->is_eof() 
+			&& substr($buffer, -2)!=self::RESERVED_CLOSE_INTERPRETER && 
+			!ctype_space($cur));
+
+		$this->skip_whitespace();
+
 		return $buffer;
 	}
 
-	private function read(&$buff) {
-		$buff.=$this->reader->next();
+	private function skip_whitespace() {
+		while(ctype_space($this->reader->get())) {
+			$this->reader->next();
+		}
 	}
 
 	private function generate_token($chunk) {
@@ -135,13 +155,31 @@ class Tokenizer {
 			case self::MODE_LITERAL:
 				return new Token_passthrough($chunk); break;
 			case self::MODE_INTERPRETER: 
-				return new Token_code($chunk); break;
+				return $this->generate_interpreter_token($chunk); break;
 		}
 
 		$this->fail("generate_token reached unreachable code");
 	}
 
+	private function generate_interpreter_token($chunk) {
+
+		switch($chunk) {
+			case self::RESERVED_PUT:
+				return new Token_put; break;
+			case self::RESERVED_FOR:
+				return new Token_for; break;
+			case self::RESERVED_ENDFOR:
+				return new Token_endfor; break;
+			case self::RESERVED_AS:
+				return new Token_as; break;
+			default:
+				return new Token_expression($chunk); break;
+		}
+
+		$this->fail("generate_interpreter_token reached unreachable code");
+	}
+
 	private function fail($msg) {
-		throw new LangException($msg);
+		throw new LangException("Tokenizer error: ".$msg);
 	}
 }
