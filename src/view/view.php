@@ -4,8 +4,23 @@ namespace Renoir_engine\View;
 //TODO: Document.
 
 //TODO: Add support for including other views and pass on their variables??
-//TODO: Add support for view inheritance.
+//TODO: There will be no support for inheritance, we will actually add support for:
+//		- include another template by its filename, relative to whatever
+//			{[include(filename)]}
+//		- feed a named template with its own set of variables and other optional symbols. 
+//			{[render(name, [vars])]}
+//TODO: We need... 
+//		- loop logic.
+//			- [[for var as name]] {{name.do_something}} [[endfor]]
+//		- simple decision taking logic... This is going to be the hardest part.
+//			- an idea... [[if (var eq|neq|isnull|gt|lt val, ...) ]]   [[elseif]] [[else]] [[endif]]
+//		- pipes for data presentation
+//TODO :We may want:
+//		- parameters for method calling
+//		- variables in path resolution.
 
+//Syntax for value resolution {{path.to>whatever*you.need}}, in which the path
+//must be resolved to a scalar value.
 //Supports:
 //	. array key indirection or numeric index indirection...
 //	> object property indirection
@@ -43,11 +58,11 @@ class View {
 		//Locate the replacement tags and resolve to their values.
 		$regexp="/{{(.+)}}/";
 		//TODO: What about the headers?????
-		return preg_replace_callback($regexp, [$this, 'resolve_value'], $str_template);
+		return preg_replace_callback($regexp, [$this, 'resolve_scalar'], $str_template);
 	}
 
 	//Resolves a value by following a path from the $values array.
-	private function resolve_value($match) {
+	private function resolve_scalar($match) {
 
 		$ref=null;
 		$parts=preg_split('/(['.self::MARK_REGEXP.'])/', $match[1], -1, PREG_SPLIT_DELIM_CAPTURE);
