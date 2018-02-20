@@ -69,12 +69,25 @@ class Tokenizer {
 	const MODE_LITERAL=1;
 	const MODE_INTERPRETER=2;
 
+	const QUOTE_STRING='"';
+
 	const RESERVED_OPEN_INTERPRETER='{{';
 	const RESERVED_CLOSE_INTERPRETER='}}';
 	const RESERVED_PUT='put';
 	const RESERVED_FOREACH='foreach';
 	const RESERVED_ENDFOREACH='endforeach';
 	const RESERVED_AS='as';
+	const RESERVED_IF='if';
+	const RESERVED_THEN='then';
+	const RESERVED_ELSE='else';
+	const RESERVED_ENDIF='endif';
+	const RESERVED_PREDICATE_EQUALS='==';
+	const RESERVED_PREDICATE_NOT_EQUALS='!=';
+	const RESERVED_PREDICATE_GREATER_OR_EQUAL_THAN='>=';
+	const RESERVED_PREDICATE_LESSER_OR_EQUAL_THAN='<=';
+	const RESERVED_PREDICATE_GREATER_THAN='>';
+	const RESERVED_PREDICATE_LESSER_THAN='<';
+	const RESERVED_NULL='null';
 
 	private $reader;
 	private $parse_mode=self::MODE_LITERAL; //We assume we start out passing through what we read.
@@ -173,11 +186,53 @@ class Tokenizer {
 				return new Token_endforeach; break;
 			case self::RESERVED_AS:
 				return new Token_as; break;
+			case self::RESERVED_IF:
+				return new Token_if; break;
+			case self::RESERVED_THEN:
+				return new Token_then; break;
+			case self::RESERVED_ELSE:
+				return new Token_else; break;
+			case self::RESERVED_ENDIF:
+				return new Token_endif; break;
+			case self::RESERVED_PREDICATE_EQUALS:
+				return new Token_condition(Token_condition::EQUALS); break;
+			case self::RESERVED_PREDICATE_NOT_EQUALS:
+				return new Token_condition(Token_condition::NOT_EQUALS); break;
+			case self::RESERVED_PREDICATE_GREATER_OR_EQUAL_THAN:
+				return new Token_condition(Token_condition::GREATER_OR_EQUAL_THAN); break;
+			case self::RESERVED_PREDICATE_LESSER_OR_EQUAL_THAN:
+				return new Token_condition(Token_condition::LESSER_OR_EQUAL_THAN); break;
+			case self::RESERVED_PREDICATE_GREATER_THAN:
+				return new Token_condition(Token_condition::GREATER_THAN); break;
+			case self::RESERVED_PREDICATE_LESSER_THAN:
+				return new Token_condition(Token_condition::LESSER_OR_EQUAL_THAN); break;
+			case self::RESERVED_NULL:
+				return new Token_expression(null, Token_expression::CONSTANT); break;
 			default:
-				return new Token_expression($chunk); break;
+
+				if(is_numeric($chunk)) {
+					if(is_int($chunk)) {
+						return new Token_expression($chunk, Token_expression::CONSTANT);
+					}
+					//Couldn't care less about non integer numbers :P, even if there's nothing to gain with this.
+					else {
+						$this->fail('only integer numeric constants are supported');
+					}
+				}
+				else if($this->is_quoted_string($chunk)) {
+					return new Token_expression(substr($chunk, 1, -1), Token_expression::CONSTANT);
+				}
+				else {
+					return new Token_expression($chunk, Token_expression::SOLVABLE);
+				}
+			break;
 		}
 
 		$this->fail("generate_interpreter_token reached unreachable code");
+	}
+
+	private function is_quoted_string($str) {
+		return strlen($str) > 2 && $str[0]==self::QUOTE_STRING && substr($str, -1)==self::QUOTE_STRING;
 	}
 
 	private function fail($msg) {

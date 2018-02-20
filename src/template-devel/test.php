@@ -1,10 +1,12 @@
 <?php
+require("expression.php");
 require("tokenizer.php");
 require("token.php");
 require("reader.php");
 require("exception.php");
 require("parser.php");
-require("template.php");
+require("view.php");
+require("operations.php");
 require("use-case-testsuite.php");
 
 set_error_handler(function ($err_severity, $err_msg, $err_file, $err_line, array $err_context) {
@@ -16,10 +18,10 @@ set_error_handler(function ($err_severity, $err_msg, $err_file, $err_line, array
 /*
 {{put value}}
 
-{{if expression predicate expression}}
+{{if expression predicate expression then}}
 {{endif}
 
-{{if expression predicate expression}}
+{{if expression predicate [eq|geqt|leqt|gt|lt] expression then}}
 {{else}}
 {{endif}
 
@@ -37,11 +39,27 @@ try{
 <p>We do shit to {{put value}}</p>
 {{ endforeach }}
 <p>And we are done!!</p>
+{{if myvar != null then}}
+<p>Myvar is not null</p>
+{{endif
+
+if myvar == "World!" then}}
+<p>My var is world, actually</p>
+{{else}}
+<p>My var is not world</p>
+{{endif}}
+<p>Finally {{put myarray.2}} and {{put thing.key>val}}</p>
+
 R;
+
+	class Thing {
+		public $val;
+		public function __construct($v) {$this->val=$v;}
+	}
 
 	$v=new View();
 	//TODO: Test objects and paths and shit!!!.
-	echo $v->set_template_string($test)->set('myvar', 'World!')->set('myarray', ['each', 'and', 'everyone'])->render();
+	echo $v->set_template_string($test)->set('thing', ['key' => new Thing('cosa')])->set('myvar', 'World!')->set('myarray', ['each', 'and', 'everyone'])->render();
 }
 catch(Exception $e) {
 	echo 'Error: '.$e->getMessage();
