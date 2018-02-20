@@ -11,6 +11,8 @@ namespace Renoir_engine\View;
 
 class View {
 
+	//!Sets the template code from a string.
+
 	public function set_template_string($str) {
 		if(!strlen($str)) {
 			$this->fail("set_template_string must be called with a string!");
@@ -18,6 +20,8 @@ class View {
 		$this->template_source=$str;
 		return $this;
 	}
+
+	//!Sets the template code from a file.
 
 	public function set_template_file($filename) {
 		if(!file_exists($filename) || !is_file($filename)) {
@@ -27,10 +31,14 @@ class View {
 		return $this;
 	}
 
+	//!Sets a variable.
+
 	public function set($key, $value) {
 		$this->values[$key]=$value;
 		return $this;
 	}
+
+	//!Causes the template to be output.
 
 	public function render() {
 		try {
@@ -38,7 +46,7 @@ class View {
 			$p=new Parser;
 			$op=$p->parse($t->tokenize());
 
-			$this->do_operation_sequence($op);
+			return $this->do_operation_sequence($op);
 		}
 		catch(\Exception $e) {
 			$this->fail('Render error: '.$e->getMessage());
@@ -50,14 +58,20 @@ class View {
 	private $template_source=null;
 	private $values=[];
 
+	//!Defines the character used as array accesor.
 	const MARK_ARRAY_INDEX='.';
+	//!Defines the character used as object propery accesor.
 	const MARK_OBJECT_PROPERTY='>';
+	//!Defines the character used as object method accesor.
 	const MARK_OBJECT_METHOD='*';
+	//TODO: I don't like regex for this... Maybe a little parser.
+	//!Full regular expression for all accesors.
 	const MARK_REGEXP='\.\>\*';
 
 	private function do_operation_sequence($op) {
+
 		do{
-			$op=$this->process_operation($op);
+			=$op=$this->process_operation($op);
 		}while($op!=null);
 	}
 

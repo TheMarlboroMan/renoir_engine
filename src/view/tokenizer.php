@@ -1,26 +1,46 @@
 <?php
 namespace Renoir_engine\View;
 
-//This just tokenizes: we don't care if the result makes sense or not because
-//that's the job of the parser. Problem here: we need to keep track of the
-//mode we are in (true parser or just passing the things we read through). 
-//To solve that we have two tokenizer modes: literal (passthrough) and 
-//interpreter (produces logic tokens). The modes are mutually exclusive.
+//!The Tokenizer consumes source code and produces an array of tokens.
+
+//!The tokens produced may or may not make sintactic sense: that is up to the
+//!parser. This Tokenizer works in two mutually exclusive modes: it either 
+//!interprets code or makes a passthrough of the source. The syntax is simple:
+//
+//!This text will be passed as it is. Double brackets enter and exit from 
+//!code mode. Code mode works with a few easy constructs:
+//!
+//!"put" outputs a constant value or solvable
+//!token in the View.
+//!{{put "hello"}} or {{put path.to.solvable.token}}
+//!
+//!"foreach" iterates an array present in the View:
+//!{{foreach myarray as localkey}}
+//!The variable localkey represents the array value: {{put localkey}}
+//!{{endforeach}}
+//!
+//!"if", "then" and "else" control conditional flow. There is no "else if"
+//!construct. Comparison operators are ==, !=, >=, <=, < and >. Values on both
+//!sides can be constants (integers, strings and null) or solvable by the View.
+//!{{if myvar > 3 then put "My var is greater than 3" else put "My var is not greater than 3" endif}}
 
 class Tokenizer {
 
 	//Public interface
 
+	//!Returns a Tokenizer whose reader is fed from a file.
 	public static function from_file($_path) {
 		$reader=Reader::from_file($_path);
 		return new Tokenizer($reader);
 	}
 
+	//!Returns a Tokenizer whose reader is fed from a string.
 	public static function from_string($_string) {
 		$reader=Reader::from_string($_string);
 		return new Tokenizer($reader);
 	}
 
+	//!Returns an array of tokens to be interpreted by the Parser.
 	public function tokenize() {
 
 		$tokens=[];
@@ -66,28 +86,49 @@ class Tokenizer {
 
 	//Internals...
 
+	//!Indicates that the parser must not change interpretation mode.
 	const MODE_UNCHANGED=0;
+	//!Indicates that the parser must change interpretation mode to "passthrough".
 	const MODE_LITERAL=1;
+	//!Indicates that the parser must change interpretation mode to "code".
 	const MODE_INTERPRETER=2;
 
+	//!Specifies the type of string quotation used.
 	const QUOTE_STRING='"';
 
+	//!Specifies the tags to open the interpreter.
 	const RESERVED_OPEN_INTERPRETER='{{';
+	//!Specifies the tags to close the interpreter.
 	const RESERVED_CLOSE_INTERPRETER='}}';
+	//!Specifies the keyword for put operation.
 	const RESERVED_PUT='put';
+	//!Specifies the keyword for foreach operation.
 	const RESERVED_FOREACH='foreach';
+	//!Specifies the keyword for endforeach.
 	const RESERVED_ENDFOREACH='endforeach';
+	//!Specifies the keyword for as.
 	const RESERVED_AS='as';
+	//!Specifies the keyword for conditional branching.
 	const RESERVED_IF='if';
+	//!Specifies the keyword for conditional branching yield.
 	const RESERVED_THEN='then';
+	//!Specifies the keyword for conditional branching when the test is negative.
 	const RESERVED_ELSE='else';
+	//!Specifies the keyword for ending conditional branching.
 	const RESERVED_ENDIF='endif';
+	//!Specifies the keyword for equal comparison.
 	const RESERVED_PREDICATE_EQUALS='==';
+	//!Specifies the keyword for non-equal comparison.
 	const RESERVED_PREDICATE_NOT_EQUALS='!=';
+	//!Specifies the keyword for equal or greater than comparison.
 	const RESERVED_PREDICATE_GREATER_OR_EQUAL_THAN='>=';
+	//!Specifies the keyword for equal or lesser than comparison.
 	const RESERVED_PREDICATE_LESSER_OR_EQUAL_THAN='<=';
+	//!Specifies the keyword for greater than comparison.
 	const RESERVED_PREDICATE_GREATER_THAN='>';
+	//!Specifies the keyword for lesser than comparison.
 	const RESERVED_PREDICATE_LESSER_THAN='<';
+	//!Specifies the keyword for null values.
 	const RESERVED_NULL='null';
 
 	private $reader;
