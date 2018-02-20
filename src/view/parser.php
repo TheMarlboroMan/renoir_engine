@@ -1,4 +1,6 @@
 <?php
+namespace Renoir_engine\View;
+
 class Parser {
 
 	const STOP_AT_END_FUNC='check_stop_at_end';

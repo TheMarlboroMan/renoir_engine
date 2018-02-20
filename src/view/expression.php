@@ -1,4 +1,6 @@
 <?php
+namespace Renoir_engine\View;
+
 abstract class Expression {
 	public $value;
 	public abstract function is_const();

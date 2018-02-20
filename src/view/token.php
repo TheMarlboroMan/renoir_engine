@@ -1,4 +1,5 @@
 <?php
+namespace Renoir_engine\View;
 
 class Token_expression {
 	const CONSTANT=0;

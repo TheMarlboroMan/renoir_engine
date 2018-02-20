@@ -1,4 +1,5 @@
 <?php
+namespace Renoir_engine\View;
 
 abstract class Operation {
 	public $next=null;

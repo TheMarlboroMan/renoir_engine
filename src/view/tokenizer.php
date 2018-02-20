@@ -1,4 +1,5 @@
 <?php
+namespace Renoir_engine\View;
 
 //This just tokenizes: we don't care if the result makes sense or not because
 //that's the job of the parser. Problem here: we need to keep track of the

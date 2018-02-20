@@ -1,4 +1,9 @@
 <?php
-require_once("view.php");
-require_once("view_exception.php");
-
+require("expression.php");
+require("operations.php");
+require("parser.php");
+require("reader.php");
+require("token.php");
+require("tokenizer.php");
+require("view.php");
+require("view_exception.php");

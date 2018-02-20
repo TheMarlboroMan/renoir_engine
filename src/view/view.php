@@ -1,43 +1,29 @@
 <?php
 namespace Renoir_engine\View;
 
-//TODO: Document.
+//TODO: Comment.
 
-//TODO: Add support for including other views and pass on their variables??
-//TODO: There will be no support for inheritance, we will actually add support for:
-//		- include another template by its filename, relative to whatever
-//			{[include(filename)]}
-//		- feed a named template with its own set of variables and other optional symbols. 
-//			{[render(name, [vars])]}
-//TODO: We need... 
-//		- loop logic.
-//			- [[for var as name]] {{name.do_something}} [[endfor]]
-//		- simple decision taking logic... This is going to be the hardest part.
-//			- an idea... [[if (var eq|neq|isnull|gt|lt val, ...) ]]   [[elseif]] [[else]] [[endif]]
-//		- pipes for data presentation
-//TODO :We may want:
-//		- parameters for method calling
-//		- variables in path resolution.
+//TODO: Add "include" to add new templates and inherit the local scope.
 
-//Syntax for value resolution {{path.to>whatever*you.need}}, in which the path
-//must be resolved to a scalar value.
-//Supports:
-//	. array key indirection or numeric index indirection...
-//	> object property indirection
-//	* object method call
+//TODO: Add "resolve" to resolve a precomiled and fed template.
+
+//TODO: Add "pipes" fro scalar presentation.
 
 class View {
 
-	const MARK_ARRAY_INDEX='.';
-	const MARK_OBJECT_PROPERTY='>';
-	const MARK_OBJECT_METHOD='*';
-	const MARK_REGEXP='\.\>\*';
+	public function set_template_string($str) {
+		if(!strlen($str)) {
+			$this->fail("set_template_string must be called with a string!");
+	}
+		$this->template_source=$str;
+		return $this;
+	}
 
-	private $values=[];
-	private $filename=null;
-
-	public function set_template_file($path) {
-		$this->filename=$path;
+	public function set_template_file($filename) {
+		if(!file_exists($filename) || !is_file($filename)) {
+			$this->fail("'".$filename."' is not a valid template source file!");
+		}
+		$this->template_source=file_get_contents($filename);
 		return $this;
 	}
 
@@ -47,25 +33,156 @@ class View {
 	}
 
 	public function render() {
-	
-		//TODO: Check that the file exists.
-		$this->parse(file_get_contents($this->filename));
+		try {
+			$t=Tokenizer::from_string($this->template_source);
+			$p=new Parser;
+			$op=$p->parse($t->tokenize());
+
+			$this->do_operation_sequence($op);
+		}
+		catch(\Exception $e) {
+			$this->fail('Render error: '.$e->getMessage());
+		}
 	}
 
-	//Parses the template file and returns its resolution.
-	protected function parse($str_template) {
+	//Inner workings...
 
-		//Locate the replacement tags and resolve to their values.
-		$regexp="/{{(.+)}}/";
-		//TODO: What about the headers?????
-		return preg_replace_callback($regexp, [$this, 'resolve_scalar'], $str_template);
+	private $template_source=null;
+	private $values=[];
+
+	const MARK_ARRAY_INDEX='.';
+	const MARK_OBJECT_PROPERTY='>';
+	const MARK_OBJECT_METHOD='*';
+	const MARK_REGEXP='\.\>\*';
+
+	private function do_operation_sequence($op) {
+		do{
+			$op=$this->process_operation($op);
+		}while($op!=null);
+	}
+
+	private function process_operation($op) {
+
+		switch(get_class($op)) {
+			case Operation_passthrough::class:
+				$this->output($op->value); 
+				return $op->next;
+			break;
+			case Operation_put::class:
+				return $this->do_put($op);
+			break;
+			case Operation_foreach::class:
+				return $this->do_foreach($op); break;
+			case Operation_if::class:
+				return $this->do_if($op); break;
+			default:
+				$this->fail('Unknown token '.get_class($op)); break;
+		}
+	} 
+
+	private function do_put(Operation_put $_op) {
+
+		$this->output($this->expression_value($_op->expression));
+		return $_op->next; 
+	}
+
+	//Foreach only works with available values, not for constant values.
+	//This could do with better scope management...
+	private function do_foreach(Operation_foreach $op) {
+
+		//TODO: This should work with every iterable thing, not only arrays.
+		$it=$this->get_value($op->iterable_expression->value);
+		if(!is_array($it)) {
+			$this->fail($op->iterable_expression->value.' is not an array');
+		}
+
+		//Now... if the local expression exists in the larger scope, let's save it..
+		$original=$this->value_exists($op->local_expression->value) ? $this->get_value($op->local_expression->value) : null;
+
+		foreach($it as $value) {
+			$this->set($op->local_expression->value, $value);
+			$this->do_operation_sequence($op->inner_operation_head);
+		}
+
+		//Restore the original key.
+		if(null!==$original) {
+			$this->set($op->local_expression->value, $original);
+		}
+
+		return $op->next;
+	}
+
+	//If can work with constant values too!.
+	private function do_if(Operation_if $_op) {
+
+		//Extract lhs and rhs final values, either constant or resolved.
+		$lhs=$this->expression_value($_op->lhs);
+		$rhs=$this->expression_value($_op->rhs);
+
+		$res=true;
+		switch($_op->condition) {
+			case Operation_if::EQUALS:
+				$res=$lhs==$rhs; break;
+			case Operation_if::GREATER_THAN:
+				$res=$lhs>$rhs; break;
+			case Operation_if::LESSER_THAN:
+				$res=$lhs<$rhs; break;
+			case Operation_if::GREATER_OR_EQUAL_THAN:
+				$res=$lhs>=$rhs; break;
+			case Operation_if::LESSER_OR_EQUAL_THAN:
+				$res=$lhs<=$rhs; break;
+			case Operation_if::NOT_EQUALS:
+				$res=$lhs!=$rhs; break;
+			default:
+				$this->fail('undefined condition on if operation'); break;
+		}
+		
+		if($res) {
+			$this->do_operation_sequence($_op->true_operation_head);
+		}
+		else {
+			if(null!==$_op->false_operation_head) {
+				$this->do_operation_sequence($_op->false_operation_head);
+			}
+		}
+
+		return $_op->next;
+	}
+
+	private function value_exists($val) {
+		return array_key_exists($val, $this->values);
+	}
+
+	//Returns a value in the $values array.
+	private function get_value($val) {
+		if(!array_key_exists($val, $this->values)) {
+			$this->fail("Value '".$val."' does not exist");
+		}
+		return $this->values[$val];
+	}
+
+	//Given an expression object, returns its value, either constant or by resolving
+	//a given path to a scalar value.
+	private function expression_value(Expression $_e) {
+
+		if($_e->is_const()) {
+			return $_e->value;
+		}
+		else {
+			return $this->resolve_scalar($_e->value);
+		}
+	}
+
+	//Just in case we want to output to somewhere else in the future.
+	private function output($str) {
+		echo $str;
 	}
 
 	//Resolves a value by following a path from the $values array.
-	private function resolve_scalar($match) {
+	private function resolve_scalar($expression) {
 
 		$ref=null;
-		$parts=preg_split('/(['.self::MARK_REGEXP.'])/', $match[1], -1, PREG_SPLIT_DELIM_CAPTURE);
+		$parts=preg_split('/(['.self::MARK_REGEXP.'])/', $expression, -1, PREG_SPLIT_DELIM_CAPTURE);
 		$key=$parts[0];
 
 		if(!array_key_exists($key, $this->values)) {
@@ -83,38 +200,42 @@ class View {
 
 					if(is_numeric($next)) {
 						if($next < 0 || $next >= count($ref)) {
-							throw new View_exception("Deep array index '".$next."' is invalid in view");
+							$this->fail("Deep array index '".$next."' is invalid in view");
 						}
 						$next=(int)$next;
 					}
 					else {
 						if(!array_key_exists($next, $ref)) {
-							throw new View_exception("Deep array key '".$next."' does not exist in view");
+							$this->fail("Deep array key '".$next."' does not exist in view");
 						}
 					}
 					$ref=&$ref[$next]; break;
 
 				case self::MARK_OBJECT_PROPERTY:
 					if(!property_exists($ref, $next)) {
-						throw new View_exception("Property '".$next."' does not exist in object view");
+						$this->fail("Property '".$next."' does not exist in object view");
 					}
 					$ref=&$ref->$next; break;
 
 				case self::MARK_OBJECT_METHOD:
 					if(!method_exists($ref, $next)) {
-						throw new View_exception("Method '".$next."' does not exist in object view");
+						$this->fail("Method '".$next."' does not exist in object view");
 					}
 					$ref=&call_user_func([$ref, $next]); break;
 
 				default:
-					throw new View_exception("'".$type."' is not a valid indirection marker for a template"); break;
+					$this->fail("'".$type."' is not a valid indirection marker for a template"); break;
 			}
 		}
 	
 		if(!is_scalar($ref)) {
-			throw new View_exception($match[1].' is not scalar and cannot be resolved to a value');
+			$this->fail($expression.' resolves to non-scalar and cannot be output');
 		}
 
 		return $ref;
 	}
-};
+
+	private function fail($msg) {
+		throw new View_exception($msg);
+	}
+}

@@ -1,4 +1,6 @@
 <?php
+namespace Renoir_engine\View;
+
 class Reader {
 
 	//Public interface.

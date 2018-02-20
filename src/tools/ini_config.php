@@ -1,5 +1,5 @@
 <?php
-namespace Renoir_engine;
+namespace Renoir_engine\Tools;
 
 class Ini_config {
 

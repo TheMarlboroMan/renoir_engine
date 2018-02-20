@@ -1,30 +1,45 @@
 <?php
-use Renoir_engine\View;
-require("autoload.php");
+require("src/view/autoload.php");
+//require("use-case-testsuite.php");
 
-class Inner {
-	public $val=null;
-	public function call_me() {return "CALLED!";}
-	public function __construct($v) {
-		$this->val=$v;
+set_error_handler(function ($err_severity, $err_msg, $err_file, $err_line, array $err_context) {
+	if($err_severity!==E_DEPRECATED) {
+		debug_print_backtrace();
+		throw new Exception("Api error handler (".$err_severity."): ".$err_msg.' ['.$err_file.':'.$err_line.'] ', $err_severity);
 	}
-}
+});
 
-class Thing {
+//execute_testsuite();
+use Renoir_engine\View\View;
 
-	public $cosa="hola";
-	public $arr=['key' => 'value', 'objs' => []];
-	private $var="private";
-	public function get_var() {return $this->var;}
-	public function __construct() {
-		$this->arr['objs'][]=new Inner("first");
-		$this->arr['objs'][]=new Inner("second");
+try{
+	$test=<<<R
+<h1>Hello!! {{   put   myvar}} </h1>
+<p>This is something</p>
+{{ foreach myarray as value }}
+<p>We do stuff to {{put value}}</p>
+{{ endforeach }}
+<p>And we are done!!</p>
+{{if myvar != null then}}
+<p>Myvar is not null</p>
+{{endif
+
+if myvar == "World!" then}}
+<p>My var is world, actually</p>
+{{else}}
+<p>My var is not world</p>
+{{endif}}
+<p>Finally {{put myarray.2}} and {{put thing.key>val}}</p>
+R;
+
+	class Thing {
+		public $val;
+		public function __construct($v) {$this->val=$v;}
 	}
-}
 
-$v=new Renoir_engine\View\View();
-echo $v->set_template_file("template-view.rtp")
-	->set('strvar1', 'Hola')
-	->set('strvar2', 'Adios')
-	->set('arrvar1', ['k1' => 'Key 1', 's_1' => ['k2' => 'Key2', 'thing' => new Thing()]])
-	->render();
+	$v=new View();
+	echo $v->set_template_string($test)->set('thing', ['key' => new Thing('cosa')])->set('myvar', 'World!')->set('myarray', ['each', 'and', 'everyone'])->render();
+}
+catch(Exception $e) {
+	echo 'Error: '.$e->getMessage();
+}
