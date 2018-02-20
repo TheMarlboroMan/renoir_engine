@@ -10,19 +10,44 @@ namespace Renoir_engine\View;
 //!This text will be passed as it is. Double brackets enter and exit from 
 //!code mode. Code mode works with a few easy constructs:
 //!
-//!"put" outputs a constant value or solvable
-//!token in the View.
-//!{{put "hello"}} or {{put path.to.solvable.token}}
+//!"put" outputs a list of constant values or solvable
+//!tokens in the View.
+//!{{put ["hello"]}} or {{put [path.to.solvable.token]}}
 //!
 //!"foreach" iterates an array present in the View:
 //!{{foreach myarray as localkey}}
-//!The variable localkey represents the array value: {{put localkey}}
+//!The variable localkey represents the array value: {{put [localkey]}}
 //!{{endforeach}}
 //!
 //!"if", "then" and "else" control conditional flow. There is no "else if"
 //!construct. Comparison operators are ==, !=, >=, <=, < and >. Values on both
 //!sides can be constants (integers, strings and null) or solvable by the View.
-//!{{if myvar > 3 then put "My var is greater than 3" else put "My var is not greater than 3" endif}}
+//!{{if myvar > 3 then put ["My var is greater than 3"] else put ["My var is not greater than 3"] endif}}
+
+//TODO: Test nested foreach and if.
+
+//TODO: Add support for pipes with put. 
+
+//TODO: We need a few functions, like size, that acts on strlen or count depending on the value.
+//But these open up a can of worms...
+
+//TODO: Use this alternative put syntax, with the brackets. Makes everything easy.
+//{{if var != null then
+//	foreach var as item 
+//		put [var.quantity] 
+//		}} of {{
+//		put [var.name | ucfirst, "(", var.price, "euro)"]
+//	endforeach
+//endif}}
+
+//TODO: Pipes should be writable by end users and added to Views. 
+
+//TODO: Perhaps we could use the import keyword for both inserting
+//and feeding templates like {{import name from [file|memory] [var as local]}} or [*] or [null]
+//and we would use up less names. I like that idea a lot.
+
+//TODO: Not tokenizer, but maybe we can somewhat serialize the operations in a text string so 
+//they can be saved and reused???? That would constitute a program XD!.
 
 class Tokenizer {
 
