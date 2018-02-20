@@ -144,7 +144,8 @@ class Tokenizer {
 	}
 
 	private function skip_whitespace() {
-		while(ctype_space($this->reader->get())) {
+
+		while(!$this->reader->is_eof() && ctype_space($this->reader->get())) {
 			$this->reader->next();
 		}
 	}
@@ -169,7 +170,7 @@ class Tokenizer {
 			case self::RESERVED_FOREACH:
 				return new Token_foreach; break;
 			case self::RESERVED_ENDFOREACH:
-				return new Token_endforach; break;
+				return new Token_endforeach; break;
 			case self::RESERVED_AS:
 				return new Token_as; break;
 			default:
@@ -180,6 +181,6 @@ class Tokenizer {
 	}
 
 	private function fail($msg) {
-		throw new LangException("Tokenizer error: ".$msg);
+		throw new View_exception("Tokenizer error: ".$msg);
 	}
 }

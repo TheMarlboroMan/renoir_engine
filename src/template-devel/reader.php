@@ -5,7 +5,7 @@ class Reader {
 
 	public static function from_file($_path) {
 		if(!file_exists($_path) || !is_file($_path)) {
-			throw new LangException("The file ".$_path." does not exist!!");
+			throw new View_exception("The file ".$_path." does not exist!!");
 		}
 
 		return new Reader(file_get_contents($_path));
@@ -13,7 +13,7 @@ class Reader {
 
 	public static function from_string($_string) {
 		if(!strlen($_string)) {
-			throw new LangException("The string '".$_string."' has no length!!");
+			throw new View_exception("The string '".$_string."' has no length!!");
 		}
 
 		return new Reader($_string);

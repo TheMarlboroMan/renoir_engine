@@ -4,6 +4,14 @@ require("token.php");
 require("reader.php");
 require("exception.php");
 require("parser.php");
+require("template.php");
+require("use-case-testsuite.php");
+
+set_error_handler(function ($err_severity, $err_msg, $err_file, $err_line, array $err_context) {
+			if($err_severity!==E_DEPRECATED) 
+				debug_print_backtrace();
+				throw new Exception("Api error handler (".$err_severity."): ".$err_msg.' ['.$err_file.':'.$err_line.'] ', $err_severity);
+		});
 
 /*
 {{put value}}
@@ -19,95 +27,21 @@ require("parser.php");
 {{endforeach}}
 */
 
-class UseCase {
+//execute_testsuite();
 
-	const V='Token_passthrough';
-	const C='Token_code';
-
-	public $name=null;
-	public $test=null;
-	public $proof=null;
-
-	public function __construct($_n, $_c, $_p) {
-		$this->name=$_n;
-		$this->test=$_c;
-		$this->proof=$_p;
-	}
-
-	public function prove($tokens) {
-
-		foreach($tokens as $ktok => $tok) {
-			if(get_class($tok) != $this->proof[$ktok]) {
-				echo "error in case ".$this->name.": ".get_class($tok).' should be '.$this->proof[$ktok]."\n";
-				return;
-			}
-		}
-	}
-};
-
-/*
-$cases=[
-	new UseCase("Full", 
-		"<p>First</p>{{second}}<p>Third</p>{{fourth}<p>Fifth</p>", 
-		[UseCase::V, UseCase::C, UseCase::V, UseCase::C, UseCase::V]),
-	new UseCase("Begin code", 
-		"{{second}}<p>Third</p>{{fourth}<p>Fifth</p>", 
-		[UseCase::C, UseCase::V, UseCase::C, UseCase::V]),
-	new UseCase("Begin end code", 
-		"{{second}}<p>Third</p>{{fourth}", //This works, but the last } will be tokenized to shit!.
-		[UseCase::C, UseCase::V, UseCase::C]),
-	new UseCase("Only whitespace", 
-		"    ", 
-		[UseCase::V]),
-	new UseCase("Code and EOF end", 
-		"{{aham", 
-		[UseCase::C]),
-	new UseCase("Just vomit", 
-		"Lalalala", 
-		[UseCase::V]),
-	new UseCase("Useless code open", 
-		"Code{{", 
-		[UseCase::V]),
-];
-
-try {
-	foreach($cases as $key => $value) {
-		$t=Tokenizer::from_string($value->test);
-		$tokens=$t->tokenize();
-		$value->prove($tokens);
-		echo "PASS [OK] : ".$value->name."\n";
-	}
-	
-	echo 'All is good';
-}
-catch(Exception $e) {
-	echo 'Error: '.$e->getMessage();
-}
-*/
-
-try {
-/*	$test=<<<R
-<h1>Hello!!</h1>
-{{  for myvar as var put   var endfor}}
-<p>This is the end</p>
-R;
-*/
-
+try{
 	$test=<<<R
-<h1>Hello!!</h1>
-{{   put   myvar}}
-<p>This is the end</p>
+<h1>Hello!! {{   put   myvar}} </h1>
+<p>This is something</p>
+{{ foreach myarray as value }}
+<p>We do shit to {{put value}}</p>
+{{ endforeach }}
+<p>And we are done!!</p>
 R;
 
-	$t=Tokenizer::from_string($test);
-
-	$p=new Parser;
-	$root=$p->parse($t->tokenize());
-
-	do{
-		print_r($root);
-		$root=$root->next;
-	}while($root!=null);
+	$v=new View();
+	//TODO: Test objects and paths and shit!!!.
+	echo $v->set_template_string($test)->set('myvar', 'World!')->set('myarray', ['each', 'and', 'everyone'])->render();
 }
 catch(Exception $e) {
 	echo 'Error: '.$e->getMessage();
