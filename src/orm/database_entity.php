@@ -1,37 +1,44 @@
 <?php
 namespace Renoir_engine\ORM;
 
-//Represents the base class for a database entity in the manner of the 
-//active-record techniques.
+//!Represents the base class for a database entity in the manner of active-record techniques.
 //
-//Unlike in the previous version of the engine, a class that extends this one 
-//must not implement specific methods but feed its own id field to the parent 
-//constructor and add its class definition to the 
-//Database_entity_link_repository.
+//!Unlike in the previous version of the engine, a class that extends this one 
+//!must not implement specific methods but feed its own id field to the parent 
+//!constructor and add its class definition to the Database_entity_link_repository.
 //
-//Also, unlike the previous version of the engine, to create an entry from an
-//array or a number, the methods from_array or from_id must be used instead
-//of the constructor. Other differences include the insert and update methods
-//taking into account the entity state instead of the data passed as 
-//parameters.
+//!Also, unlike the previous version of the engine, to create an entry from an
+//!array or a number, the methods from_array or from_id must be used instead
+//!!of the constructor. Other differences include the insert and update methods
+//!taking into account the entity state instead of the data passed as 
+//!parameters.
+//!
+//!Every database entity class must extend this one, provide its id to the
+//!parent constructor, define itself in the Database_entity_link_repository
+//!and provide an id field (a primary key).
+//!
+//!Examples of use can be found in the examples directory.
 
 abstract class Database_entity {
 
-	const DEF_ID_PARAM=':id';
-	const KEY_PROPERTY=111;
-	const KEY_FIELD=112;
-	const DISALLOW_ID=113;
-	const ALLOW_ID=114;
+	const DEF_ID_PARAM=':id';	//!< Defines the default variable name for binding the id.
+	const KEY_PROPERTY=111;		//!< Defines that keys in an array (when creating an object from it) should be mapped to class properties.
+	const KEY_FIELD=112;		//!< Defines that keys in an array (when creating an object from it) should be mapped to database fields.
+	const DISALLOW_ID=113;		//!< Indicates that no ID field should be defined when creating an object from an array or setting its properties from it.
+	const ALLOW_ID=114;		//!< Indicates that an ID field is allowed when creating an object from an array or setting its properties from it.
 
 	private static $strict_id_find=true;
 	private static $conn=null;
 	private $id=null;
 
+	//!Disables throwing an exception if no object can be found by "from_id" (throws by default).
 	public static function disable_strict_id_find() {self::$strict_id_find=false;}
+	//!Enables throwing an exception if no object can be found by "from_id" (enabled by default).
 	public static function enable_strict_id_find() {self::$strict_id_find=true;}
+	//!Injects the static database component. Must be done after connecting.
 	public static function set_connection(Database_connection $_c) {self::$conn=$_c;}
 
-	//Instantiates an object of the derived class with the given id.
+	//!Instantiates an object of the derived class with the given id.
 	public static function from_id($id) {
 
 		$classname=get_called_class();
@@ -44,10 +51,12 @@ abstract class Database_entity {
 		return $result;
 	}
 
-	//Instantiates an object of the derived class with the given data. The id is not neccesary. 
-	//Data is a key-value array in which key is the property or database field, as indicated by 
-	//the second parameter. Not all values must be present for this to work. If the id is found
-	//it is treated as if it was real: meaning it might overwrite real data on update.
+	//!Instantiates an object of the derived class with the given data. 
+
+	//!The id is not neccesary. Data is a key-value array in which key is 
+	//!the property or database field, as indicated by the second parameter. 
+	//!Not all values must be present for this to work. If the id is found
+	//!it is treated as if it was real: meaning it might overwrite real data on update.
 	public static function from_array(array $data, $discriminator=self::KEY_PROPERTY) {
 
 		$classname=get_called_class();
@@ -56,6 +65,9 @@ abstract class Database_entity {
 		return $result;
 	}
 
+	//!Class constructor.
+
+	//!Every derived class must pass its own id field.
 	public function __construct(&$_bind_id) {
 
 		$this->id=&$_bind_id;
@@ -79,6 +91,10 @@ abstract class Database_entity {
 	}
 	*/
 
+	//!Records the object in the database. 
+
+	//!This function takes no parameters: the data is taken from the
+	//!object itself and fed to the database.
 	public final function insert() {
 
 		if($this->id) {
@@ -121,6 +137,10 @@ abstract class Database_entity {
 		}
 	}
 
+	//!Updates an object in the database.
+
+	//!This function takes no parameters: values are taken directly
+	//!from the object.
 	public final function update() {
 
 		if(!$this->id) {
@@ -169,6 +189,7 @@ abstract class Database_entity {
 		}
 	}
 
+	//!Removes an object from the database.
 	public final function delete() {
 
 		if(!$this->id) {
@@ -192,7 +213,7 @@ abstract class Database_entity {
 		}
 	}
 
-	//Fetchs all columns from the database that correspond to the given id.
+	//!Fetchs all columns from the database that correspond to the given id.
 	private final function fetch_data_by_id($id) {
 
 		if(!self::$conn) {
@@ -215,10 +236,12 @@ abstract class Database_entity {
 		}
 	}
 
-	//Uses the setters to set all properties in the object from the data array, 
-	//which consists of key and value pairs (where key is the database field or the property name).
-	//If the id is included in the data it may throw unless the third parameter is
-	//set to ALLOW_ID.
+	//!Uses the setters to set all properties in the object from the data array.
+
+	//!The data array consists of key and value pairs (where key is the 
+	//!database field or the property name, as the discriminator parameter
+	//!dictates, property by default). If the id is included in the 
+	//!data it may throw unless the third parameter is set to ALLOW_ID.
 
 	public final function set_properties(array $data, $discriminator=self::KEY_PROPERTY, $allow_id=self::DISALLOW_ID) {
 
@@ -259,8 +282,7 @@ abstract class Database_entity {
 		}
 	}
 
-	//Returns the Database_entity_link object that corresponds to the id.
-
+	//!Returns the Database_entity_link object that corresponds to the id.
 	private function get_id_definition() {
 		
 		$id_definition=array_filter(Database_entity_link_repository::get(get_called_class())->definitions, function(Database_entity_link $l) {return $l->is_id;});

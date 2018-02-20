@@ -1,18 +1,23 @@
 <?php
 namespace Renoir_engine\View;
 
-//TODO: Comment.
+//TODO: Add "import" for new and fed templates.
+//TODO: Can we resolve a fed template when feeding it?. Instead of when
+//rendering it?. It will actually help us catching template errors... but will
+//disallow importing the variables into it.
 
-//TODO: Add "include" to add new templates and inherit the local scope.
+//TODO: Add pipes for scalar presentation.
 
-//TODO: Add "resolve" to resolve a precomiled and fed template.
+//TODO: Add different outputs: to file, to string, to standard.
 
-//TODO: Add "pipes" fro scalar presentation.
+//!Defines the combination of a template and a set of variables that will be used on it.
+
+//!TODO: Extended comment.
+//!TODO: Document path syntax.
 
 class View {
 
 	//!Sets the template code from a string.
-
 	public function set_template_string($str) {
 		if(!strlen($str)) {
 			$this->fail("set_template_string must be called with a string!");
@@ -22,7 +27,6 @@ class View {
 	}
 
 	//!Sets the template code from a file.
-
 	public function set_template_file($filename) {
 		if(!file_exists($filename) || !is_file($filename)) {
 			$this->fail("'".$filename."' is not a valid template source file!");
@@ -31,15 +35,13 @@ class View {
 		return $this;
 	}
 
-	//!Sets a variable.
-
+	//!Sets a variable in the local scope.
 	public function set($key, $value) {
 		$this->values[$key]=$value;
 		return $this;
 	}
 
 	//!Causes the template to be output.
-
 	public function render() {
 		try {
 			$t=Tokenizer::from_string($this->template_source);
@@ -54,19 +56,14 @@ class View {
 	}
 
 	//Inner workings...
-
 	private $template_source=null;
 	private $values=[];
 
-	//!Defines the character used as array accesor.
-	const MARK_ARRAY_INDEX='.';
-	//!Defines the character used as object propery accesor.
-	const MARK_OBJECT_PROPERTY='>';
-	//!Defines the character used as object method accesor.
-	const MARK_OBJECT_METHOD='*';
+	const MARK_ARRAY_INDEX='.';		//!<Defines the character used as array accesor.
+	const MARK_OBJECT_PROPERTY='>';		//!<Defines the character used as object propery accesor.
+	const MARK_OBJECT_METHOD='*';		//!<Defines the character used as object method accesor.
 	//TODO: I don't like regex for this... Maybe a little parser.
-	//!Full regular expression for all accesors.
-	const MARK_REGEXP='\.\>\*';
+	const MARK_REGEXP='\.\>\*';		//!<Full regular expression for all accesors.
 
 	private function do_operation_sequence($op) {
 
@@ -94,8 +91,8 @@ class View {
 		}
 	} 
 
+	//!Executes the put operation.
 	private function do_put(Operation_put $_op) {
-
 		$this->output($this->expression_value($_op->expression));
 		return $_op->next; 
 	}
@@ -126,7 +123,7 @@ class View {
 		return $op->next;
 	}
 
-	//If can work with constant values too!.
+	//!Executes the if operation.
 	private function do_if(Operation_if $_op) {
 
 		//Extract lhs and rhs final values, either constant or resolved.
@@ -163,11 +160,12 @@ class View {
 		return $_op->next;
 	}
 
+	//!Checks if a value exists in the local scope.
 	private function value_exists($val) {
 		return array_key_exists($val, $this->values);
 	}
 
-	//Returns a value in the $values array.
+	//!Returns a value in the $values array from the local scope.
 	private function get_value($val) {
 		if(!array_key_exists($val, $this->values)) {
 			$this->fail("Value '".$val."' does not exist");
@@ -175,8 +173,7 @@ class View {
 		return $this->values[$val];
 	}
 
-	//Given an expression object, returns its value, either constant or by resolving
-	//a given path to a scalar value.
+	//!Given an expression object, returns its value, either constant or by resolving a given path to a scalar value.
 	private function expression_value(Expression $_e) {
 
 		if($_e->is_const()) {
@@ -187,13 +184,25 @@ class View {
 		}
 	}
 
-	//Just in case we want to output to somewhere else in the future.
+	//TODO: Oh, yeah, we want to.
+	//TODO: In fact, this should be a "pointer to function" 
+	//whenever we call it... 
+	//!Just in case we want to output to somewhere else in the future.
 	private function output($str) {
 		echo $str;
 	}
 
-	//Resolves a value by following a path from the $values array.
+	/* private function output_std($str)
+	private function output_str($str)
+	private function output_file($str)
+	*/
+
+	//TODO: Document how the path is specified!!!!!.
+	//!Resolves a value by following a path from the $values array.
 	private function resolve_scalar($expression) {
+
+		//TODO: I'm pretty much sure that reading this char by char
+		//will be fast enough and readable.
 
 		$ref=null;
 		$parts=preg_split('/(['.self::MARK_REGEXP.'])/', $expression, -1, PREG_SPLIT_DELIM_CAPTURE);
@@ -249,6 +258,7 @@ class View {
 		return $ref;
 	}
 
+	//!Throws an exception.
 	private function fail($msg) {
 		throw new View_exception($msg);
 	}
