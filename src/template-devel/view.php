@@ -1,4 +1,13 @@
 <?php
+
+//TODO: Comment.
+
+//TODO: Add "include" to add new templates and inherit the local scope.
+
+//TODO: Add "resolve" to resolve a precomiled and fed template.
+
+//TODO: Add "pipes" fro scalar presentation.
+
 class View {
 
 	public function set_template_string($str) {

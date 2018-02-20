@@ -10,24 +10,11 @@ require("operations.php");
 require("use-case-testsuite.php");
 
 set_error_handler(function ($err_severity, $err_msg, $err_file, $err_line, array $err_context) {
-			if($err_severity!==E_DEPRECATED) 
-				debug_print_backtrace();
-				throw new Exception("Api error handler (".$err_severity."): ".$err_msg.' ['.$err_file.':'.$err_line.'] ', $err_severity);
-		});
-
-/*
-{{put value}}
-
-{{if expression predicate expression then}}
-{{endif}
-
-{{if expression predicate [eq|geqt|leqt|gt|lt] expression then}}
-{{else}}
-{{endif}
-
-{{foreach expression as value}}
-{{endforeach}}
-*/
+	if($err_severity!==E_DEPRECATED) {
+		debug_print_backtrace();
+		throw new Exception("Api error handler (".$err_severity."): ".$err_msg.' ['.$err_file.':'.$err_line.'] ', $err_severity);
+	}
+});
 
 //execute_testsuite();
 
@@ -49,7 +36,6 @@ if myvar == "World!" then}}
 <p>My var is not world</p>
 {{endif}}
 <p>Finally {{put myarray.2}} and {{put thing.key>val}}</p>
-
 R;
 
 	class Thing {
@@ -58,7 +44,6 @@ R;
 	}
 
 	$v=new View();
-	//TODO: Test objects and paths and shit!!!.
 	echo $v->set_template_string($test)->set('thing', ['key' => new Thing('cosa')])->set('myvar', 'World!')->set('myarray', ['each', 'and', 'everyone'])->render();
 }
 catch(Exception $e) {
