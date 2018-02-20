@@ -61,6 +61,24 @@ abstract class Database_entity {
 		$this->id=&$_bind_id;
 	}
 
+	//TODO:
+	/*
+	TODO: Perhaps this is static as well??? Think about use cases.
+	public final function get_query_class() {
+
+		$classname=get_called_class().'_sql';
+		if(!class_exists($classname)) {
+			//BLAH BLAH
+		}
+
+		if(!self::$conn) {
+			//BLAH BLAH.
+		}
+
+		return new $classname(self::$conn);
+	}
+	*/
+
 	public final function insert() {
 
 		if($this->id) {

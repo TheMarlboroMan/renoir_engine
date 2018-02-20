@@ -1,5 +1,5 @@
 <?php
-namespace Renoir_Engine\tools;
+namespace Renoir_engine;
 
 class Ini_config {
 
@@ -9,7 +9,6 @@ class Ini_config {
 
 		$this->data=@parse_ini_file($_path);
 		if(!$this->data) {
-			//TODO: This should be a Tools exception.
 			throw new \Exception("Error parsing ".$_path." for Ini_config");
 		}
 	}
