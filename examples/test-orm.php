@@ -1,7 +1,7 @@
 <?php
 namespace OOT;
 
-require("autoload.php");
+require("../autoload.php");
 
 use Renoir_engine\ORM\Database_entity_link_repository;
 use Renoir_engine\ORM\Database_entity_link;
