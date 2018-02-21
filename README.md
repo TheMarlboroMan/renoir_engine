@@ -5,7 +5,7 @@ Renoir Engine Mark VI.
 
 This is my very own framework (more like... set of tools) for developing PHP applications. This code is actually very old, but I am working very hard on creating a new version.
 
-This is the "development" version: it should not be used with legacy applications. Of course, I don't endorse you using this for your own projects.
+This is the "development" version: it should not be used with legacy applications. Of course, I don't endorse you using this for your own projects. Go check some other big frameworks that are peer-reviewed and tested by hundreds of thousands every day. This I do for my own amusement and use.
 
 # Why Mark VI?
 
@@ -16,20 +16,20 @@ The previous versions of the framework" were called "the engine" until I decided
 The code is NOT compatible between versions.
 
 As for notable differences, there are a few:
-	- Everything is new. Oh well.
-	- Everything is namespaced now and I am trying to make an effort to keep things modular.
-	- A large part of the previous version were wrappers around mysql_* functions, to make them secure. These are discarded and PDO use is directly expected.
-	- The language: everything is in English now.
-	- Relationship abstraction between tables dissapear for now. I kind of always figured that M to N relationships were overkill for the previous version.
-	- Exception: each set of tools (each namespace) throws its own exception now.
-	- The base email class will (probably) be retired. The days of EHLO and talking TTLS are gone :(.
-	- Many things go to the trash, like the HTML tools, a variable container or the GD image tools. Perhaps some will be replaced as I need them.
+		-Everything is new. Oh well.
+		-Everything is namespaced now and I am trying to make an effort to keep things modular.
+		-A large part of the previous version were wrappers around mysql_* functions, to make them secure. These are discarded and PDO use is directly expected.
+		-The language: everything is in English now.
+		-Relationship abstraction between tables dissapear for now. I kind of always figured that M to N relationships were overkill for the previous version.
+		-Exception: each set of tools (each namespace) throws its own exception now.
+		-The base email class will (probably) be retired. The days of EHLO and talking TTLS are gone :(.
+		-Many things go to the trash, like the HTML tools, a variable container or the GD image tools. Perhaps some will be replaced as I need them.
 
 # How to use:
 
 The "examples" directory will contain "how to"s for every piece. 
 
-In addition, you can generate the Doxygen documentation by running "doxygen doxygen.config" from the root (provided you installed Doxygen before, of course).
+In addition, you can generate the Doxygen documentation by running "doxygen doxygen.config" from the root (provided you installed Doxygen before, of course). It will not contain examples but will show each and every class with a definition and a fully commented public interface.
 
 # What's all that stuff in the src directory?
 

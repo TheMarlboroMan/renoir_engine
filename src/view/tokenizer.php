@@ -38,15 +38,26 @@ namespace Renoir_engine\View;
 //!{{import file somethingsolvable [*]}}
 
 //TODO: We'll likely need to add as symbol for solvable shit, like $.
-//It is cool: everything that is not a number, null or a quoted string we can
-//assume to be an invalid expression :D.
+//It is cool: everything that is not a number, null, quoted string or a 
+//solvable expression we can assume to be an invalid expression :D... but
+//that will fuck up foreach (thing as thing) and import (crap as blap)...
+//But then again, these things would be solvable later, right???? All is good :D.
+//I think I will use @solve.me.now, like at solve of me of now.
+//As for how to tokenize it, it is similar to the quoted string, only we start at
+//@ and we stop at a whitespace, a comma or a closing list. To be fair, the @
+//can be ommited from the resulting path.
 
-//TODO: Add support for pipes with put. 
+//TODO: Once the above is done, please, rewrite the path parser so it does not
+//use stupid regex.
+
+//TODO: Add support for pipes with put. If need be, add the pipe to the list
+//of allowed characters after a @path expression.
 //TODO: Pipes should be writable by end users and added to Views. 
 
 //TODO: We need a few functions, like size, that acts on strlen or count depending on the value.
 //But these open up a can of worms... maybe just a sizeof keyword that the parser reads
 //greedily and converts into a valid constant expression.
+	//TODO: Or maybe that's a stupid pipe to XD! if myarray | size > 0 then 
 
 //TODO: Fix whitescape space after }} like {{put ["hello"]}} world.
 
