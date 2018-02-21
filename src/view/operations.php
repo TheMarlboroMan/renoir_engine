@@ -75,20 +75,15 @@ class Import_symbol {
 
 class Operation_import extends Operation {
 
-	const SOURCE_FILE=1;		//!< Indicates that the template name refers to a file.
-	const SOURCE_SUB=2;		//!< Indicates that the template name refers to a fed subtemplate.
-
 	const IMPORT_MODE_ALL=1;	//!< Imports all symbols from the current template.
 	const IMPORT_MODE_NONE=2;	//!< Imports no symbols from the current template.
 	const IMPORT_MODE_SYMBOL=3;	//!< Imports only the specified 
 
-	public $source_mode;		//!< Either file or sub.
 	public $source;			//!< An Expression to figure out the source.
 	public $import_mode;		//!< One of the IMPORT_MODE_ constants.
 	public $symbol_list;		//!< Array of Import Symbol.
 
-	public function __construct($_sm, Expression $_s, $_i, $_l=[]) {
-		$this->source_mode=$_sm;
+	public function __construct(Expression $_s, $_i, $_l=[]) {
 		$this->source=$_s;
 		$this->import_mode=$_i;
 		$this->symbol_list=$_l;

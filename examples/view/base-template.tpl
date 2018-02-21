@@ -41,10 +41,10 @@
 	}}
 	<hr />
 	<h2>Now I will import a template with no data for each thing...</h2>
-	{{foreach things as item import file "imported-template-none.tpl" [] endforeach}}
+	{{foreach things as item import "imported-template-none.tpl" [] endforeach}}
 	<h2>Now I will import a template with all symbols for each thing...</h2>
-	{{foreach things as item import file "imported-template-all.tpl" [*] endforeach}}
+	{{foreach things as item import "imported-template-all.tpl" [*] endforeach}}
 	<h2>Now I will import a template with some symbols for each thing... I can also resolve the template file name!</h2>
-	{{foreach things as item import file templatefilenamesymbols [item as local, "cosa" as constant] endforeach}}
+	{{foreach things as item import templatefilenamesymbols [item as local, "cosa" as constant] endforeach}}
 </body>
 </html>

@@ -66,5 +66,4 @@ class Token_close_list {}	//!< Token for a comma.
 class Token_comma {}		//!< Token for a comma.
 class Token_import{}		//!< Token for the import keyword.
 class Token_import_file{}	//!< Token for importing a file as a template.
-class Token_import_sub{}	//!< Token for importing a file from memory.
 class Token_asterisk{}		//!< Token for the asterisk symbol.

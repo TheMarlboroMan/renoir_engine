@@ -142,19 +142,7 @@ class Parser {
 	//!Creates an import operation
 	private function do_import(Token_import $tok, array &$_t) {
 
-		//We have already discarded "import".
-		$type=$this->shift($_t);
-		$import_source=null;
-
-		switch(get_class($type)) {
-			case Token_import_file::class:
-				$import_source=Operation_import::SOURCE_FILE; break;
-			case Token_import_sub::class:
-				$import_source=Operation_import::SOURCE_SUB; break;
-			default:
-				$this->fail("import must either be file or sub!!"); break;
-		}
-
+		//We have already discarded "import"... Let us get the "filename".
 		$source_expression=$this->extract_expression($this->shift_must_be($_t, Token_expression::class));
 		$this->shift_must_be($_t, Token_open_list::class);
 
@@ -182,7 +170,7 @@ class Parser {
 				}break;
 		}
 
-		$this->new_operation(new Operation_import($import_source, $source_expression, $import_mode, $symbol_table));
+		$this->new_operation(new Operation_import($source_expression, $import_mode, $symbol_table));
 		return $this->process($_t);
 	}
 
@@ -273,18 +261,6 @@ class Parser {
 		$tok_condition=$this->shift_must_be($_t, Token_condition::class)->condition;
 		$rhs=$this->extract_expression($this->shift_must_be($_t, Token_expression::class));
 		$this->shift_must_be($_t, Token_then::class); //Discard then.
-
-/* TODO: 
-This way of working prevents us from having nested IFs, as the parser won't stop
-We should have it running until it finds "endif", and then, somehow, separate.
-Thing is, that will run a chain of operations from then to endif, including else. We
-could do another separate pass there but that sucks... mostly. We could modify the
-parser so it allows branching and starts putting shit into another head once an 
-else is found. Of course, this would have to explode if an else is found and no
-branching is allowed.
-
-WE also need better debugging tools...
-*/
 
 		//Let's start whith the code to execute if everything is ok with the condition...
 		$ok_head=$this->process_inner_parser($_t, self::STOP_AT_ELSE_OR_ENDIF_FUNC, 'if condition');

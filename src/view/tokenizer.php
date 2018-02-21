@@ -27,28 +27,26 @@ namespace Renoir_engine\View;
 //!sides can be constants (integers, strings and null) or solvable by the View.
 //!{{if myvar > 3 then put ["My var is greater than 3"] else put ["My var is not greater than 3"] endif}}
 //
-//!"import" is used to insert another template. Its scope can be defined. It
-//!makes no recursion checks, so you can easily run out of memory :D.
-//!Notice that if you need a filename, you want it to be a constant
-//!expression, hence the string.
+//!"import" is used to insert another template. Its scope can be defined with
+//!a list, be left blank of fully inherited with "*". It makes no recursion 
+//!checks, so you can easily run out of memory :D. Notice that if you want a 
+//!filename, you want it to be a constant expression, hence the string.
+//!Templates cannot be imported from a string... I could make them do it, 
+//!but I don't really see a use for it.
 //!{{import file "templatename" [var as local, var2 as somethingsolvable]}}
-//!{{import sub "templatename"  [*]}}
 //!{{import file somethingsolvable []}}
+//!{{import file somethingsolvable [*]}}
 
 //TODO: We'll likely need to add as symbol for solvable shit, like $.
 //It is cool: everything that is not a number, null or a quoted string we can
 //assume to be an invalid expression :D.
 
 //TODO: Add support for pipes with put. 
+//TODO: Pipes should be writable by end users and added to Views. 
 
 //TODO: We need a few functions, like size, that acts on strlen or count depending on the value.
 //But these open up a can of worms... maybe just a sizeof keyword that the parser reads
 //greedily and converts into a valid constant expression.
-
-//TODO: Pipes should be writable by end users and added to Views. 
-
-//TODO: Not tokenizer, but maybe we can somewhat serialize the operations in a text string so 
-//they can be saved and reused???? That would constitute a program XD!.
 
 //TODO: Fix whitescape space after }} like {{put ["hello"]}} world.
 
@@ -142,7 +140,6 @@ class Tokenizer {
 	const RESERVED_COMMA=',';	//!< Specifies a list separator.
 	const RESERVED_IMPORT='import';	//!< Specifies the Keyword for template import.
 	const RESERVED_FILE='file';	//!< Specifies the keyword for template import from file.
-	const RESERVED_SUB='sub';	//!< Specifies the keyword for subtemplate import.
 	const RESERVED_ASTERISK='*';	//!< Specifies the keyword for importing all template data.
 
 	private $reader;		//!< A Reader object.
@@ -338,8 +335,6 @@ class Tokenizer {
 				return new Token_import; break;
 			case self::RESERVED_FILE:
 				return new Token_import_file; break;
-			case self::RESERVED_SUB:
-				return new Token_import_sub; break;
 			case self::RESERVED_ASTERISK:
 				return new Token_asterisk; break;
 			default:

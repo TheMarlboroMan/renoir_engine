@@ -91,26 +91,15 @@ class View {
 
 	private function do_import(Operation_import $_op) {
 
-		$v=null;
+		$v=new View;
 
 		//Getting the template...
-		switch($_op->source_mode) {
-			case Operation_import::SOURCE_FILE:
-				$filename=$this->expression_value($_op->source);
-				try {
-					$v=new View;
-					$v->set_template_file($filename);
-				}
-				catch(\Exception $e) {
-					$this->fail('unable to import template: '.$e->getMessage());
-				}
-			break;
-			case Operation_import::SOURCE_SUB:
-				//TODO... Load up $v.
-				die('Import source sub is not implemented yet!!');
-			break;
-			default:
-				$this->fail('unknown source mode in do_import!'); break;
+		$filename=$this->expression_value($_op->source);
+		try {
+			$v->set_template_file($filename);
+		}
+		catch(\Exception $e) {
+			$this->fail('unable to import template: '.$e->getMessage());
 		}
 
 		switch($_op->import_mode) {
