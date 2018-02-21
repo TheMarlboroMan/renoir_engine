@@ -121,10 +121,16 @@ class Parser {
 	
 	//!Checks if the first item in the array is of type $type. Does not discard the token. Throws when no more tokens are available.
 	private function check_type(array $_t, $type) {
+
+		return $this->get_type($_t)==$type;
+	}
+
+	//!Returns the type of the first item in the array.
+	private function get_type(array $_t) {
 		if(!count($_t)) {
 			$this->fail('check type failed: no more tokens');
 		}
-		return get_class($_t[0])==$type;
+		return get_class($_t[0]);
 	}
 
 	//!Creates a passthrough operation.
@@ -155,14 +161,16 @@ class Parser {
 		//Three distinct possibilities: we find an asterisk, we find a closing list or a list...
 		$import_mode=null;
 		$symbol_table=[];
-		$cur=$this->shift($_t);
-		switch(get_class($cur)) {
+
+		switch($this->get_type($_t)) {
 			case Token_asterisk::class:
 				$import_mode=Operation_import::IMPORT_MODE_ALL;
+				$this->shift_must_be($_t, Token_asterisk::class); 
 				$this->shift_must_be($_t, Token_close_list::class); 
 				break;
 			case Token_close_list::class:
 				$import_mode=Operation_import::IMPORT_MODE_NONE;
+				$this->shift_must_be($_t, Token_close_list::class); 
 				break;
 			default:
 				try {
@@ -179,25 +187,32 @@ class Parser {
 	}
 
 	//!Extract a list of "expression as expression" symbols until "end of list" is found. Croaks if not.
-
-	//!It is important to know that the currently shifted symbol is already an expression.
-	//TODO: I need to solve this :(.
-	private function extract_import_table(array $_t) {
+	private function extract_import_table(array &$_t) {
 		$result=[];
+		$loop=true;
 
-		do {
+		while($loop){
 			if(!count($_t)) {
 				$this->fail('unexpected end in import symbol table');
 			}
 			$expr=$this->extract_expression($this->shift_must_be($_t, Token_expression::class));
 			$this->shift_must_be($_t, Token_as::class);
 			$local_expr=$this->extract_expression($this->shift_must_be($_t, Token_expression::class));
-			$result[]=new Import_symbol($expr, $local_expr);
-		}while(Token_close_list::class!=get_class($cur));
 
-//TODO.
-print_r($result);
-die();
+			//TODO: next we have a comma... Or we close the list...
+			switch($this->get_type($_t)) {
+				case Token_comma::class:
+					$this->shift($_t); break;
+				case Token_close_list::class:
+					$this->shift($_t);
+					$loop=false;
+					break;
+				default:
+					$this->fail('unexpected '.$this->get_type($_t).' in import symbol list'); break;
+			}
+
+			$result[]=new Import_symbol($expr, $local_expr);
+		};
 
 		return $result;
 	}

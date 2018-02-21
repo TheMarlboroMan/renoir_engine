@@ -119,8 +119,7 @@ class View {
 			case Operation_import::IMPORT_MODE_NONE: break;
 			case Operation_import::IMPORT_MODE_SYMBOL:
 				foreach($_op->symbol_list as $symbol) {
-					//TODO: Now we need to resolve this too!!!!.
-					die('resolving shit!');
+					$v->values[$symbol->local_expression->value]=$this->expression_value($symbol->expression);
 				}
 			break;
 			default:

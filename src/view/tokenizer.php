@@ -29,7 +29,9 @@ namespace Renoir_engine\View;
 //
 //!"import" is used to insert another template. Its scope can be defined. It
 //!makes no recursion checks, so you can easily run out of memory :D.
-//!{{import file "templatename" [var as local, var2 as local2]}}
+//!Notice that if you need a filename, you want it to be a constant
+//!expression, hence the string.
+//!{{import file "templatename" [var as local, var2 as somethingsolvable]}}
 //!{{import sub "templatename"  [*]}}
 //!{{import file somethingsolvable []}}
 
