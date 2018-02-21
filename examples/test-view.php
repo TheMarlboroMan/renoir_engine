@@ -32,12 +32,12 @@ try{
 {{foreach words as word}}
 <p><b>{{put [word]}}</b></p>
 {{endforeach}}
-<p>Finally I also have a number, {{put [number]}} which:
+<p>Finally I also have a number, {{put [number]}} which: 
 {{if number > 10 then 
 	put ["is larger than 10"]
 	if number > 100 then
 		put [" and is also larger than 100"]
-		if number > 1000 then
+		if number > 1000 then 
 			put [" and is larger than 1000"]
 		else
 			put [" but is not larger than 1000"]

@@ -9,9 +9,9 @@ namespace Renoir_engine\View;
 class Parser {
 
 	const STOP_AT_END_FUNC='check_stop_at_end';	//!< Symbol for a function used to stop the parser when the tokens are used up.
-	const STOP_AT_FOREACH_END_FUNC='check_stop_at_foreach_end';	//!< Symbol for a function used to stop the parser when a foreach end token is reached.
-	const STOP_AT_IF_END_FUNC='check_stop_at_if_end';	//!< Symbol for a function used to stop the parser when else or endif tokens are found.
-	const STOP_AT_ELSE_END_FUNC='check_stop_at_else_end';	//!< Symbol for a function used to stop the parser when an endif token is found.
+	const STOP_AT_FOREACHEND_FUNC='check_stop_at_foreachend';	//!< Symbol for a function used to stop the parser when a foreach end token is reached.
+	const STOP_AT_ELSE_OR_ENDIF_FUNC='check_stop_at_else_or_endif';	//!< Symbol for a function used to stop the parser when else or endif tokens are found.
+	const STOP_AT_ENDIF_FUNC='check_stop_at_endif';	//!< Symbol for a function used to stop the parser when an endif token is found.
 
 	//!Creates a parser. The default parameters will suffice for all client code.
 	public function __construct($_psc=self::STOP_AT_END_FUNC, $_name='main', $_dd=0) {
@@ -21,7 +21,7 @@ class Parser {
 	}
 
 	//!Activates debug mode, which outputs a few messages.
-	public function activate_debug($v) {
+	public function activate_debug() {
 		$this->debug_active=true;
 	}
 
@@ -43,9 +43,9 @@ class Parser {
 	private function set_stop_condition($_sc) {
 		switch($_sc) {
 			case self::STOP_AT_END_FUNC:
-			case self::STOP_AT_FOREACH_END_FUNC:
-			case self::STOP_AT_IF_END_FUNC:
-			case self::STOP_AT_ELSE_END_FUNC:
+			case self::STOP_AT_FOREACHEND_FUNC:
+			case self::STOP_AT_ELSE_OR_ENDIF_FUNC:
+			case self::STOP_AT_ENDIF_FUNC:
 				$this->process_stop_condition=$_sc; break;
 			default:
 				$this->fail('unknown stop condition'); break;
@@ -90,7 +90,7 @@ class Parser {
 		return !count($_t);
 	}
 
-	private function check_stop_at_foreach_end(array &$_t) {
+	private function check_stop_at_foreachend(array &$_t) {
 		try {
 			return $this->check_type($_t, Token_endforeach::class);
 		}
@@ -99,7 +99,7 @@ class Parser {
 		}
 	}
 
-	private function check_stop_at_if_end(array $_t) {
+	private function check_stop_at_else_or_endif(array &$_t) {
 		try {
 			return $this->check_type($_t, Token_endif::class) || $this->check_type($_t, Token_else::class);
 		}
@@ -108,7 +108,7 @@ class Parser {
 		}
 	}
 
-	private function check_stop_at_else_end(array $_t) {
+	private function check_stop_at_endif(array &$_t) {
 		try {
 			return $this->check_type($_t, Token_endif::class);
 		}
@@ -169,7 +169,7 @@ class Parser {
 		$check_type($local_expr);
 
 		//Now we'll need another series of instructions to run 
-		$operation_head=$this->process_inner_parser($_t, self::STOP_AT_FOREACH_END_FUNC, 'foreach');
+		$operation_head=$this->process_inner_parser($_t, self::STOP_AT_FOREACHEND_FUNC, 'foreach');
 		$this->shift($_t); //Remove endforeach token.
 		 
 		$this->new_operation(new Operation_foreach($iterable_expr, $local_expr, $operation_head));
@@ -177,23 +177,45 @@ class Parser {
 	}
 
 	//!Creates the sequence for a if operation.
-	private function do_if(Token_if $tok, array $_t) {
+	private function do_if(Token_if $tok, array &$_t) {
 		//Extract lhs, condition and rhs (a == b)...
 		$lhs=$this->extract_expression($this->shift_must_be($_t, Token_expression::class));
 		$tok_condition=$this->shift_must_be($_t, Token_condition::class)->condition;
 		$rhs=$this->extract_expression($this->shift_must_be($_t, Token_expression::class));
 		$this->shift_must_be($_t, Token_then::class); //Discard then.
 
+/* TODO: 
+This way of working prevents us from having nested IFs, as the parser won't stop
+We should have it running until it finds "endif", and then, somehow, separate.
+Thing is, that will run a chain of operations from then to endif, including else. We
+could do another separate pass there but that sucks... mostly. We could modify the
+parser so it allows branching and starts putting shit into another head once an 
+else is found. Of course, this would have to explode if an else is found and no
+branching is allowed.
+
+WE also need better debugging tools...
+*/
+
 		//Let's start whith the code to execute if everything is ok with the condition...
-		$ok_head=$this->process_inner_parser($_t, self::STOP_AT_IF_END_FUNC, 'if');
+		$ok_head=$this->process_inner_parser($_t, self::STOP_AT_ELSE_OR_ENDIF_FUNC, 'if condition');
+		$this->debug_announce("innerparse positive finished");
 
 		//Now we get to see if we have "else" or "endif", the only values allowed for when
 		//the inner parser exited.
 		$next=$this->shift($_t);
+
 		$nook_head=null;
-		if(get_class($next)==Token_else::class) {
-			$nook_head=$this->process_inner_parser($_t, self::STOP_AT_ELSE_END_FUNC, 'else');
-			$this->shift_must_be($_t, Token_endif::class);
+		switch(get_class($next)) {
+			case Token_else::class:
+				$this->debug_announce("starting else parser...");
+				$nook_head=$this->process_inner_parser($_t, self::STOP_AT_ENDIF_FUNC, 'else condition');
+				$this->debug_announce("gonna shift endif...");
+				$this->shift_must_be($_t, Token_endif::class);
+				$this->debug_announce("innerparse negative finished with endif");
+			break;
+			case Token_endif::class:
+				$this->debug_announce("endif found with no else");
+			break;
 		}
 
 		$this->new_operation(new Operation_if($lhs, $rhs, $this->if_operation_condition_from_tok_condition($tok_condition), $ok_head, $nook_head));
@@ -202,8 +224,9 @@ class Parser {
 
 	//!Spawns an inner parser and runs the remaining tokens until its stop function is found, returning the first operation of the subparser. Used by ifs and foreachs.
 	private function process_inner_parser(array &$_t, $_stop, $_name) {
-		$this->debug_announce("starting new parser '".$_name."'");
+		$this->debug_announce("starting inner parser for code '".$_name."'");
 		$inner_parser=new Parser($_stop, $_name, $this->debug_depth+1);
+		$inner_parser->debug_active=$this->debug_active;
 		return $inner_parser->process($_t); //Process, not parse: parse won't remove elements from the array!.
 	}
 

@@ -46,9 +46,9 @@ class View {
 		try {
 			$t=Tokenizer::from_string($this->template_source);
 			$p=new Parser;
-//print_r($t->tokenize());
-//die();
-			$op=$p->parse($t->tokenize());
+//			$p->activate_debug();
+			$tokens=$t->tokenize();
+			$op=$p->parse($tokens);
 
 			return $this->do_operation_sequence($op);
 		}
@@ -106,16 +106,17 @@ class View {
 	private function do_foreach(Operation_foreach $op) {
 
 		//TODO: This should work with every iterable thing, not only arrays.
-		$it=$this->get_value($op->iterable_expression->value);
+		$it=$this->expression_value($op->iterable_expression);
 		if(!is_array($it)) {
 			$this->fail($op->iterable_expression->value.' is not an array');
 		}
 
-		//Now... if the local expression exists in the larger scope, let's save it..
+		//Now... if the local expression exists in the larger scope, let's save it...
 		$original=$this->value_exists($op->local_expression->value) ? $this->get_value($op->local_expression->value) : null;
 
 		foreach($it as $value) {
 			$this->set($op->local_expression->value, $value);
+			//TODO: do_operation_sequence could actually inherit a scope.
 			$this->do_operation_sequence($op->inner_operation_head);
 		}
 
@@ -193,6 +194,12 @@ class View {
 	//whenever we call it... 
 	//!Just in case we want to output to somewhere else in the future.
 	private function output($str) {
+
+		if(!is_scalar($str)) {
+			$this->fail($str.' resolves to non-scalar and cannot be output');
+		}
+
+
 		echo $str;
 	}
 
@@ -248,15 +255,11 @@ class View {
 					if(!method_exists($ref, $next)) {
 						$this->fail("Method '".$next."' does not exist in object view");
 					}
-					$ref=&call_user_func([$ref, $next]); break;
+					$ref=call_user_func([$ref, $next]); break;
 
 				default:
 					$this->fail("'".$type."' is not a valid indirection marker for a template"); break;
 			}
-		}
-	
-		if(!is_scalar($ref)) {
-			$this->fail($expression.' resolves to non-scalar and cannot be output');
 		}
 
 		return $ref;

@@ -8,7 +8,7 @@ namespace Renoir_engine\View;
 //!interprets code or makes a passthrough of the source. The syntax is simple:
 //
 //!This text will be passed as it is. Double brackets enter and exit from 
-//!code mode. Code mode works with a few easy constructs:
+//!code mode. Code mode works with a few easy constructs (which can be nested):
 //!
 //!"put" outputs a list of constant values or solvable tokens in the View.
 //!Elements in the list are comma separated. Constant values can be null,
@@ -25,12 +25,11 @@ namespace Renoir_engine\View;
 //!sides can be constants (integers, strings and null) or solvable by the View.
 //!{{if myvar > 3 then put ["My var is greater than 3"] else put ["My var is not greater than 3"] endif}}
 
-//TODO: Test nested foreach and if.
-
 //TODO: Add support for pipes with put. 
 
 //TODO: We need a few functions, like size, that acts on strlen or count depending on the value.
-//But these open up a can of worms...
+//But these open up a can of worms... maybe just a sizeof keyword that the parser reads
+//greedily and converts into a valid constant expression.
 
 //TODO: Pipes should be writable by end users and added to Views. 
 
@@ -40,6 +39,8 @@ namespace Renoir_engine\View;
 
 //TODO: Not tokenizer, but maybe we can somewhat serialize the operations in a text string so 
 //they can be saved and reused???? That would constitute a program XD!.
+
+//TODO: Fix whitescape space after }} like {{put ["hello"]}} world.
 
 class Tokenizer {
 
@@ -75,7 +76,6 @@ class Tokenizer {
 			// 5 - interpreter with }}
 			// 6 - interpreter that ends with eof.
 			//	- For all of these, we know we are in MODE_INTERPRETER.
-			// 7 - Just empty space...
 			// We need to process the chunk, to see if we will change modes
 			// after a token is created.
 
