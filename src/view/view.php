@@ -46,6 +46,8 @@ class View {
 		try {
 			$t=Tokenizer::from_string($this->template_source);
 			$p=new Parser;
+//print_r($t->tokenize());
+//die();
 			$op=$p->parse($t->tokenize());
 
 			return $this->do_operation_sequence($op);
@@ -68,7 +70,7 @@ class View {
 	private function do_operation_sequence($op) {
 
 		do{
-			=$op=$this->process_operation($op);
+			$op=$this->process_operation($op);
 		}while($op!=null);
 	}
 
@@ -93,7 +95,9 @@ class View {
 
 	//!Executes the put operation.
 	private function do_put(Operation_put $_op) {
-		$this->output($this->expression_value($_op->expression));
+		foreach($_op->expressions as &$e) {
+			$this->output($this->expression_value($e));
+		}
 		return $_op->next; 
 	}
 

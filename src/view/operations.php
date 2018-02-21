@@ -18,9 +18,9 @@ class Operation_passthrough extends Operation {
 
 //!An Operation that outputs an Expression.
 class Operation_put extends Operation {
-	public $expression;	//!< Expression to be output.
-	public function __construct(Expression $exp) {	//!< Constructs the object from the given expression.
-		$this->expression=$exp;
+	public $expressions;	//!< Array of expressions to be output.
+	public function __construct(array $exp) {	//!< Constructs the object from the given array of expressions.
+		$this->expressions=$exp;
 	}
 }
 

@@ -10,9 +10,10 @@ namespace Renoir_engine\View;
 //!This text will be passed as it is. Double brackets enter and exit from 
 //!code mode. Code mode works with a few easy constructs:
 //!
-//!"put" outputs a list of constant values or solvable
-//!tokens in the View.
-//!{{put ["hello"]}} or {{put [path.to.solvable.token]}}
+//!"put" outputs a list of constant values or solvable tokens in the View.
+//!Elements in the list are comma separated. Constant values can be null,
+//!strings or integers. Srings are delimited by double quotes.
+//!{{put ["hello"]}} or {{put [path.to.solvable.token, "ok", 33]}}
 //!
 //!"foreach" iterates an array present in the View:
 //!{{foreach myarray as localkey}}
@@ -30,15 +31,6 @@ namespace Renoir_engine\View;
 
 //TODO: We need a few functions, like size, that acts on strlen or count depending on the value.
 //But these open up a can of worms...
-
-//TODO: Use this alternative put syntax, with the brackets. Makes everything easy.
-//{{if var != null then
-//	foreach var as item 
-//		put [var.quantity] 
-//		}} of {{
-//		put [var.name | ucfirst, "(", var.price, "euro)"]
-//	endforeach
-//endif}}
 
 //TODO: Pipes should be writable by end users and added to Views. 
 
@@ -73,6 +65,7 @@ class Tokenizer {
 
 			$chunk=$this->next();
 
+
 			//Here is the crux, our chunk is either
 			// 1 - just {{
 			// 2 - a literal with {{
@@ -82,6 +75,7 @@ class Tokenizer {
 			// 5 - interpreter with }}
 			// 6 - interpreter that ends with eof.
 			//	- For all of these, we know we are in MODE_INTERPRETER.
+			// 7 - Just empty space...
 			// We need to process the chunk, to see if we will change modes
 			// after a token is created.
 
@@ -111,58 +105,42 @@ class Tokenizer {
 
 	//Internals...
 
-	//!Indicates that the parser must not change interpretation mode.
-	const MODE_UNCHANGED=0;
-	//!Indicates that the parser must change interpretation mode to "passthrough".
-	const MODE_LITERAL=1;
-	//!Indicates that the parser must change interpretation mode to "code".
-	const MODE_INTERPRETER=2;
+	const MODE_UNCHANGED=0;		//!< Indicates that the parser must not change interpretation mode.
+	const MODE_LITERAL=1;		//!< Indicates that the parser must change interpretation mode to "passthrough".
+	const MODE_INTERPRETER=2;	//!< Indicates that the parser must change interpretation mode to "code".
 
-	//!Specifies the type of string quotation used.
-	const QUOTE_STRING='"';
+	const QUOTE_STRING='"';		//!< Specifies the type of string quotation used.
 
-	//!Specifies the tags to open the interpreter.
-	const RESERVED_OPEN_INTERPRETER='{{';
-	//!Specifies the tags to close the interpreter.
-	const RESERVED_CLOSE_INTERPRETER='}}';
-	//!Specifies the keyword for put operation.
-	const RESERVED_PUT='put';
-	//!Specifies the keyword for foreach operation.
-	const RESERVED_FOREACH='foreach';
-	//!Specifies the keyword for endforeach.
-	const RESERVED_ENDFOREACH='endforeach';
-	//!Specifies the keyword for as.
-	const RESERVED_AS='as';
-	//!Specifies the keyword for conditional branching.
-	const RESERVED_IF='if';
-	//!Specifies the keyword for conditional branching yield.
-	const RESERVED_THEN='then';
-	//!Specifies the keyword for conditional branching when the test is negative.
-	const RESERVED_ELSE='else';
-	//!Specifies the keyword for ending conditional branching.
-	const RESERVED_ENDIF='endif';
-	//!Specifies the keyword for equal comparison.
-	const RESERVED_PREDICATE_EQUALS='==';
-	//!Specifies the keyword for non-equal comparison.
-	const RESERVED_PREDICATE_NOT_EQUALS='!=';
-	//!Specifies the keyword for equal or greater than comparison.
-	const RESERVED_PREDICATE_GREATER_OR_EQUAL_THAN='>=';
-	//!Specifies the keyword for equal or lesser than comparison.
-	const RESERVED_PREDICATE_LESSER_OR_EQUAL_THAN='<=';
-	//!Specifies the keyword for greater than comparison.
-	const RESERVED_PREDICATE_GREATER_THAN='>';
-	//!Specifies the keyword for lesser than comparison.
-	const RESERVED_PREDICATE_LESSER_THAN='<';
-	//!Specifies the keyword for null values.
-	const RESERVED_NULL='null';
+	const RESERVED_OPEN_INTERPRETER='{{'; 	//!< Specifies the tags to open the interpreter.
+	const RESERVED_CLOSE_INTERPRETER='}}';	//!< Specifies the tags to close the interpreter.
+	const RESERVED_PUT='put';	//!< Specifies the keyword for put operation.
+	const RESERVED_FOREACH='foreach';	//!< Specifies the keyword for foreach operation.
+	const RESERVED_ENDFOREACH='endforeach';	//!< Specifies the keyword for endforeach.
+	const RESERVED_AS='as';	//!< Specifies the keyword for as.
+	const RESERVED_IF='if';	//!< Specifies the keyword for conditional branching.
+	const RESERVED_THEN='then';	//!< Specifies the keyword for conditional branching yield.
+	const RESERVED_ELSE='else';	//!< Specifies the keyword for conditional branching when the test is negative.
+	const RESERVED_ENDIF='endif';	//!< Specifies the keyword for ending conditional branching.
+	const RESERVED_PREDICATE_EQUALS='==';	//!< Specifies the keyword for equal comparison.
+	const RESERVED_PREDICATE_NOT_EQUALS='!=';	//!< Specifies the keyword for non-equal comparison.
+	const RESERVED_PREDICATE_GREATER_OR_EQUAL_THAN='>=';	//!< Specifies the keyword for equal or greater than comparison.
+	const RESERVED_PREDICATE_LESSER_OR_EQUAL_THAN='<=';	//!< Specifies the keyword for equal or lesser than comparison.
+	const RESERVED_PREDICATE_GREATER_THAN='>';	//!< Specifies the keyword for greater than comparison.
+	const RESERVED_PREDICATE_LESSER_THAN='<';	//!< Specifies the keyword for lesser than comparison.
+	const RESERVED_NULL='null';	//!< Specifies the keyword for null values.
+	const RESERVED_OPEN_LIST='[';	//!< Specifies the character to open lists.
+	const RESERVED_CLOSE_LIST=']';	//!< Specifies the character to close lists.
+	const RESERVED_COMMA=',';	//!< Specifies a list separator.
 
-	private $reader;
-	private $parse_mode=self::MODE_LITERAL; //We assume we start out passing through what we read.
+	private $reader;		//!< A Reader object.
+	private $parse_mode=self::MODE_LITERAL; //!< Parser mode, either literal or interpreter. We assume we start out passing through what we read.
 
+	//!Creates an object from a reader.
 	private function __construct(Reader $_r) {
 		$this->reader=$_r;
 	}
 
+	//!Returns the parser mode we must use after $chunk is processed. It might return "no changes".
 	private function extract_mode_delimiter($chunk) {
 
 		if(!$chunk) {
@@ -174,8 +152,10 @@ class Tokenizer {
 		else return self::MODE_UNCHANGED;
 	}
 
-	//Reads the next chunk and returns it. What a chunk is
-	//depends on the tokenizing mode.
+	//!Reads the next chunk and returns it. What a chunk is depends on the tokenizing mode.
+
+	//!Passthrough mode reads chunks until EOF or {{ is found. Interpreter mode
+	//!reads chunks separated by whitespace.
 	private function next() {
 
 		switch($this->parse_mode) {
@@ -190,7 +170,7 @@ class Tokenizer {
 		$this->fail("next reached unreachable code");
 	}
 
-	//Reads until EOF or the begin-code delimiter are found.
+	//!Reads until EOF or the begin-code delimiter are found.
 	private function read_passthrough() {
 
 		$buffer='';
@@ -201,35 +181,90 @@ class Tokenizer {
 
 	}
 
-	//Reads the next token, which is either what happens before EOF, a
-	//close delimiter or a whitespace...
+	//!Reads the next token, which happen in a number of ways.
+
+	//!A new token is produced when EOF is reached, or any of the following
+	//!are found: whitespace, close code delimiter, comma, open or close
+	//!lists. A special case is made when a quoted string is found.
 	private function read_interpreter() {
 
 		$this->skip_whitespace();
-		$buffer='';
-		$cur='';
-		do {
-			$cur=$this->reader->next();
+		if(self::QUOTE_STRING==$this->reader->get()) {
+			return $this->read_string_literal();
+		}
+		else {
+			$buffer='';
+			$cur='';
 
-			if(!ctype_space($cur)) {
-				$buffer.=$cur;
-			}
-		}while(!$this->reader->is_eof() 
-			&& substr($buffer, -2)!=self::RESERVED_CLOSE_INTERPRETER && 
-			!ctype_space($cur));
+			while(!$this->reader->is_eof()){ //While true may cause us to go out of bounds...
 
-		$this->skip_whitespace();
+				$cur=$this->reader->get();
 
-		return $buffer;
+				//We just found [ ] or ,....
+				if($this->is_non_whitespace_token($cur)) {
+					//It is the first thing we find: so it constitutes its own token.
+					if(!strlen($buffer)) {
+						$buffer=$this->reader->next(); //Same as .=$cur
+						break;
+					}
+					//It is not separated by whitespace, but must be its own token!.
+					else {
+						//By breaking out we force the previous case in the next iteration.
+						break;
+					}
+				}
+				//Anything else.
+				else {
+					if($this->reader->is_eof() 
+						|| substr($buffer, -2)==self::RESERVED_CLOSE_INTERPRETER 
+						|| ctype_space($cur)) {
+						break;
+					}
+					$buffer.=$this->reader->next();
+				}
+			};
+
+			$this->skip_whitespace(); //This might take us to EOF.
+			return $buffer;
+		}
 	}
 
-	private function skip_whitespace() {
+	//!Determines if the string is a special token that needs no whitespace to separate it from the others.
 
+	//!The cases are things like put[hello ,again] where , must be read as its own token.
+	//!or put [hello, where [ must be read as its own.
+	private function is_beginning_of_non_whitespace_token($buffer) {
+		return strlen($buffer)==1 && $this->is_non_whitespace_token($buffer);
+	}
+
+	private function is_non_whitespace_token($chr) {
+		return $chr==self::RESERVED_COMMA ||
+			$chr==self::RESERVED_OPEN_LIST ||
+			$chr==self::RESERVED_CLOSE_LIST;
+	}
+
+	//!Reads a string literal from " to ".
+	private function read_string_literal() {
+		$res="";
+		do{
+			if($this->reader->is_eof()) {
+				$this->fail("unterminated string literal '".$res."'");
+			}
+
+			$res.=$this->reader->next();
+		}while(self::QUOTE_STRING!=$this->reader->get());
+		$res.=$this->reader->next(); //End quote...
+		return $res;
+	}
+
+	//!Skips all whitespace from the reader, used only in interpreter mode.
+	private function skip_whitespace() {
 		while(!$this->reader->is_eof() && ctype_space($this->reader->get())) {
 			$this->reader->next();
 		}
 	}
 
+	//!Returns a token from the $chunk: entry point for specific functions.
 	private function generate_token($chunk) {
 
 		switch($this->parse_mode) {
@@ -242,6 +277,7 @@ class Tokenizer {
 		$this->fail("generate_token reached unreachable code");
 	}
 
+	//!Returns an interpreter token.
 	private function generate_interpreter_token($chunk) {
 
 		switch($chunk) {
@@ -275,10 +311,16 @@ class Tokenizer {
 				return new Token_condition(Token_condition::LESSER_OR_EQUAL_THAN); break;
 			case self::RESERVED_NULL:
 				return new Token_expression(null, Token_expression::CONSTANT); break;
+			case self::RESERVED_OPEN_LIST:
+				return new Token_open_list; break;
+			case self::RESERVED_CLOSE_LIST:
+				return new Token_close_list; break;
+			case self::RESERVED_COMMA:
+				return new Token_comma; break;
 			default:
-
 				if(is_numeric($chunk)) {
-					if(is_int($chunk)) {
+					//TODO: Kind of redundant, right??
+					if(is_int((int)$chunk)) {
 						return new Token_expression($chunk, Token_expression::CONSTANT);
 					}
 					//Couldn't care less about non integer numbers :P, even if there's nothing to gain with this.
@@ -287,6 +329,7 @@ class Tokenizer {
 					}
 				}
 				else if($this->is_quoted_string($chunk)) {
+					//Remove quotes from literals.
 					return new Token_expression(substr($chunk, 1, -1), Token_expression::CONSTANT);
 				}
 				else {
@@ -298,10 +341,12 @@ class Tokenizer {
 		$this->fail("generate_interpreter_token reached unreachable code");
 	}
 
+	//!Returns true is $str is between double quotes.
 	private function is_quoted_string($str) {
 		return strlen($str) > 2 && $str[0]==self::QUOTE_STRING && substr($str, -1)==self::QUOTE_STRING;
 	}
 
+	//!Throws an exception.
 	private function fail($msg) {
 		throw new View_exception("Tokenizer error: ".$msg);
 	}

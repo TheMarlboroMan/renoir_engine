@@ -70,3 +70,9 @@ class Token_condition {
 		$this->condition=$_p;
 	}
 }
+//!Token for opening a list.
+class Token_open_list {}
+//!Token for closing a list.
+class Token_close_list {}
+//!Token for a comma.
+class Token_comma {}

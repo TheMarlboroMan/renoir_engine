@@ -14,10 +14,10 @@ use Renoir_engine\View\View;
 
 try{
 	$test=<<<R
-<h1>Hello!! {{   put   myvar}} </h1>
+<h1>Hello!! {{   put  [myvar]}} </h1>
 <p>This is something</p>
 {{ foreach myarray as value }}
-<p>We do stuff to {{put value}}</p>
+<p>We do stuff to {{put [value]}}</p>
 {{ endforeach }}
 <p>And we are done!!</p>
 {{if myvar != null then}}
@@ -29,8 +29,10 @@ if myvar == "World!" then}}
 {{else}}
 <p>My var is not world</p>
 {{endif}}
-<p>Finally {{put myarray.2}} and {{put thing.key>val}}</p>
+<p>Finally {{put [myarray.2]}} and {{put [thing.key>val]}}</p>
 R;
+
+$test='HELLO {{put[myvar,10 , "const[]{{}}lolol" ]}} kTHNXBYE!';
 
 	class Thing {
 		public $val;

@@ -91,28 +91,40 @@ class Parser {
 	}
 
 	private function check_stop_at_foreach_end(array &$_t) {
-		if(!count($_t)) {
+		try {
+			return $this->check_type($_t, Token_endforeach::class);
+		}
+		catch(\Exception $e) {
 			$this->fail('unexpected end inside foreach loop');
 		}
-		return get_class($_t[0])==Token_endforeach::class;
 	}
 
 	private function check_stop_at_if_end(array $_t) {
-		if(!count($_t)) {
+		try {
+			return $this->check_type($_t, Token_endif::class) || $this->check_type($_t, Token_else::class);
+		}
+		catch(\Exception $e) {
 			$this->fail('unexpected end inside conditional evaluation');
 		}
-
-		$type=get_class($_t[0]);
-		return $type==Token_endif::class || $type==Token_else::class;
 	}
 
 	private function check_stop_at_else_end(array $_t) {
-		if(!count($_t)) {
+		try {
+			return $this->check_type($_t, Token_endif::class);
+		}
+		catch(\Exception $e) {
 			$this->fail('unexpected end inside else');
 		}
-		return get_class($_t[0])==Token_endif::class;
 	}
 	
+	//!Checks if the first item in the array is of type $type. Does not discard the token. Throws when no more tokens are available.
+	private function check_type(array $_t, $type) {
+		if(!count($_t)) {
+			$this->fail('check type failed: no more tokens');
+		}
+		return get_class($_t[0])==$type;
+	}
+
 	//!Creates a passthrough operation.
 	private function do_passthrough(Token_passthrough $tok, array &$_t) {
 		$this->new_operation(new Operation_passthrough($tok->contents));
@@ -121,7 +133,20 @@ class Parser {
 
 	//!Creates a put operation.
 	private function do_put(Token_put $tok, array &$_t) {
-		$expr=$this->extract_expression($this->shift_must_be($_t, Token_expression::class));
+
+		$this->shift_must_be($_t, Token_open_list::class);
+		//Now we should have a comma separated list of expressions...
+		$expr=[];
+		while(true){
+			$expr[]=$this->extract_expression($this->shift_must_be($_t, Token_expression::class));
+			if(!$this->check_type($_t, Token_comma::class)) {
+				break;
+			}
+			else {
+				$this->shift($_t);
+			}
+		}
+		$this->shift_must_be($_t, Token_close_list::class);
 		$this->new_operation(new Operation_put($expr));
 		return $this->process($_t);
 	}
@@ -211,7 +236,7 @@ class Parser {
 	private function shift_must_be(array &$_t, $type) {
 		$tok=$this->shift($_t);
 		if(get_class($tok) != $type) {
-			$this->fail('expected '.$type.', got'.get_class($tok));
+			$this->fail('shift_must_be expected '.$type.', got '.get_class($tok));
 		}
 		return $tok;
 	}
@@ -236,6 +261,7 @@ class Parser {
 		}
 	}
 
+	//TODO: We can have pipes too....This will need to change.
 	//!Parses a Token_expression to create the corresponding Expression object.
 	private function extract_expression(Token_expression $_t) {
 		switch($_t->type) {
