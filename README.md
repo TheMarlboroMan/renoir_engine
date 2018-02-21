@@ -3,13 +3,13 @@ Renoir Engine Mark VI.
 
 # About
 
-This is my very own framework (more like... set of tools) for developing PHP applications. This code is actually very old, but I am working very hard on creating a new version.
+This is my very own framework (more like... set of tools) for developing PHP applications. The legacy code is actually very old, but I am working very hard on creating a new version.
 
 This is the "development" version: it should not be used with legacy applications. Of course, I don't endorse you using this for your own projects. Go check some other big frameworks that are peer-reviewed and tested by hundreds of thousands every day. This I do for my own amusement and use.
 
 # Why Mark VI?
 
-The previous versions of the framework" were called "the engine" until I decided to name it Renoir Engine so sort of matches my domain name. Anyway, there have been several incarnations of the tools that have been sequentially named Mark I, Mark II... I think the last was Mark IV but given the differences between the last incarnation and this, I am skipping a number.
+The previous versions of the "framework" were called "the engine" until I decided to name it Renoir Engine so sort of matches my domain name. Anyway, there have been several incarnations of the tools that have been sequentially named Mark I, Mark II... I think the last was Mark IV but given the differences between the last incarnation and this, I am skipping a number.
 
 # Differences and missing stuff from the previous version.
 
