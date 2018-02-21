@@ -13,7 +13,7 @@ set_error_handler(function ($err_severity, $err_msg, $err_file, $err_line, array
 use Renoir_engine\View\View;
 
 try{
-/*
+	$template_str=<<<R
 <h1>{{put[header]}}</h1>
 <p>I have a few things:</p>
 <ul>
@@ -30,14 +30,9 @@ try{
 <ul>
 <p>I also have some words!!!</p>
 {{foreach words as word}}
-<p>
-	<b>{{put [word]}}</b>
-</p>
+<p><b>{{put [word]}}</b></p>
 {{endforeach}}
 <p>Finally I also have a number, {{put [number]}} which:
-*/
-
-	$template_str=<<<R
 {{if number > 10 then 
 	put ["is larger than 10"]
 	if number > 100 then
