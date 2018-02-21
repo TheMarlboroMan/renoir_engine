@@ -37,24 +37,15 @@ class Token_passthrough {
 	}
 }
 
-//!Token for Parser consumption representing a put operation.
-class Token_put {}
-//!Token for Parser consumption representing a foreach operation.
-class Token_foreach {}
-//!Token for Parser consumption representing the end of a foreach operation.
-class Token_endforeach {}
-//!Token for Parser consumption representing the keyword for local foreach variables.
-class Token_as {}
-//!Token for Parser consumption representing the beginning of a conditional check.
-class Token_if {}
-//!Token for Parser consumption representing the beginning of code for a positive conditional check.
-class Token_then {}
-//!Token for Parser consumption representing the beginning of code for a negative conditional check.
-class Token_else {}
-//!Token for Parser consumption representing the end of a conditional check.
-class Token_endif {}
-//!Token for Parser consumption representing a condition.
-class Token_condition {
+class Token_put {}		//!< Token for Parser consumption representing a put operation.
+class Token_foreach {}		//!< Token for Parser consumption representing a foreach operation.
+class Token_endforeach {}	//!< Token for Parser consumption representing the end of a foreach operation.
+class Token_as {}		//!< Token for Parser consumption representing the keyword for local foreach variables.
+class Token_if {}		//!< Token for Parser consumption representing the beginning of a conditional check.
+class Token_then {}		//!< Token for Parser consumption representing the beginning of code for a positive conditional check.
+class Token_else {}		//!< Token for Parser consumption representing the beginning of code for a negative conditional check.
+class Token_endif {}		//!< Token for Parser consumption representing the end of a conditional check.
+class Token_condition {		//!< Token for Parser consumption representing a condition.
 
 	const EQUALS=1;					//!<Symbol for ==.
 	const GREATER_THAN=2;				//!<Symbol for >.
@@ -70,9 +61,10 @@ class Token_condition {
 		$this->condition=$_p;
 	}
 }
-//!Token for opening a list.
-class Token_open_list {}
-//!Token for closing a list.
-class Token_close_list {}
-//!Token for a comma.
-class Token_comma {}
+class Token_open_list {}	//!< Token for opening a list.
+class Token_close_list {}	//!< Token for a comma.
+class Token_comma {}		//!< Token for a comma.
+class Token_import{}		//!< Token for the import keyword.
+class Token_import_file{}	//!< Token for importing a file as a template.
+class Token_import_sub{}	//!< Token for importing a file from memory.
+class Token_asterisk{}		//!< Token for the asterisk symbol.

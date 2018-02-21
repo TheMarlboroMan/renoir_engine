@@ -1,7 +1,7 @@
 <?php
 namespace Renoir_engine\View;
 
-//!Parses an array of tokens to produce Operations.
+//!Parses an array of tokens to produce Operation objects.
 
 //!Only the first operation is returned from the Parser: the rest of operations
 //!are available in the style of a linked list.
@@ -79,6 +79,8 @@ class Parser {
 					return $this->do_foreach($tok, $_t); break;
 				case Token_if::class:
 					return $this->do_if($tok, $_t); break;
+				case Token_import::class:
+					return $this->do_import($tok, $_t); break;
 				default:
 					$this->fail('Unexpected token '.get_class($tok)); 
 				break;
@@ -131,6 +133,75 @@ class Parser {
 		return $this->process($_t);
 	}
 
+	//!Creates an import operation
+	private function do_import(Token_import $tok, array &$_t) {
+
+		//We have already discarded "import".
+		$type=$this->shift($_t);
+		$import_source=null;
+
+		switch(get_class($type)) {
+			case Token_import_file::class:
+				$import_source=Operation_import::SOURCE_FILE; break;
+			case Token_import_sub::class:
+				$import_source=Operation_import::SOURCE_SUB; break;
+			default:
+				$this->fail("import must either be file or sub!!"); break;
+		}
+
+		$source_expression=$this->extract_expression($this->shift_must_be($_t, Token_expression::class));
+		$this->shift_must_be($_t, Token_open_list::class);
+
+		//Three distinct possibilities: we find an asterisk, we find a closing list or a list...
+		$import_mode=null;
+		$symbol_table=[];
+		$cur=$this->shift($_t);
+		switch(get_class($cur)) {
+			case Token_asterisk::class:
+				$import_mode=Operation_import::IMPORT_MODE_ALL;
+				$this->shift_must_be($_t, Token_close_list::class); 
+				break;
+			case Token_close_list::class:
+				$import_mode=Operation_import::IMPORT_MODE_NONE;
+				break;
+			default:
+				try {
+					$import_mode=Operation_import::IMPORT_MODE_SYMBOL;
+					$symbol_table=$this->extract_import_table($_t);
+				}
+				catch(\Exception $e) {
+					$this->fail('could not do import symbol table: '.$e->getMessage());
+				}break;
+		}
+
+		$this->new_operation(new Operation_import($import_source, $source_expression, $import_mode, $symbol_table));
+		return $this->process($_t);
+	}
+
+	//!Extract a list of "expression as expression" symbols until "end of list" is found. Croaks if not.
+
+	//!It is important to know that the currently shifted symbol is already an expression.
+	//TODO: I need to solve this :(.
+	private function extract_import_table(array $_t) {
+		$result=[];
+
+		do {
+			if(!count($_t)) {
+				$this->fail('unexpected end in import symbol table');
+			}
+			$expr=$this->extract_expression($this->shift_must_be($_t, Token_expression::class));
+			$this->shift_must_be($_t, Token_as::class);
+			$local_expr=$this->extract_expression($this->shift_must_be($_t, Token_expression::class));
+			$result[]=new Import_symbol($expr, $local_expr);
+		}while(Token_close_list::class!=get_class($cur));
+
+//TODO.
+print_r($result);
+die();
+
+		return $result;
+	}
+
 	//!Creates a put operation.
 	private function do_put(Token_put $tok, array &$_t) {
 
@@ -138,6 +209,10 @@ class Parser {
 		//Now we should have a comma separated list of expressions...
 		$expr=[];
 		while(true){
+			if(!count($_t)) {
+				$this->fail('unexpected end in put statement list');
+			}
+
 			$expr[]=$this->extract_expression($this->shift_must_be($_t, Token_expression::class));
 			if(!$this->check_type($_t, Token_comma::class)) {
 				break;

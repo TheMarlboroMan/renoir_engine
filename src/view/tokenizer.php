@@ -7,8 +7,10 @@ namespace Renoir_engine\View;
 //!parser. This Tokenizer works in two mutually exclusive modes: it either 
 //!interprets code or makes a passthrough of the source. The syntax is simple:
 //
-//!This text will be passed as it is. Double brackets enter and exit from 
-//!code mode. Code mode works with a few easy constructs (which can be nested):
+//!Text will be passed as it is. Double brackets enter and exit from 
+//!code mode. Code mode works with a few easy constructs (which can be nested)
+//!and keywords. Expressions must not be named after keywords!. The list of
+//!keywords has been kept to a minimum.
 //!
 //!"put" outputs a list of constant values or solvable tokens in the View.
 //!Elements in the list are comma separated. Constant values can be null,
@@ -24,6 +26,16 @@ namespace Renoir_engine\View;
 //!construct. Comparison operators are ==, !=, >=, <=, < and >. Values on both
 //!sides can be constants (integers, strings and null) or solvable by the View.
 //!{{if myvar > 3 then put ["My var is greater than 3"] else put ["My var is not greater than 3"] endif}}
+//
+//!"import" is used to insert another template. Its scope can be defined. It
+//!makes no recursion checks, so you can easily run out of memory :D.
+//!{{import file "templatename" [var as local, var2 as local2]}}
+//!{{import sub "templatename"  [*]}}
+//!{{import file somethingsolvable []}}
+
+//TODO: We'll likely need to add as symbol for solvable shit, like $.
+//It is cool: everything that is not a number, null or a quoted string we can
+//assume to be an invalid expression :D.
 
 //TODO: Add support for pipes with put. 
 
@@ -32,10 +44,6 @@ namespace Renoir_engine\View;
 //greedily and converts into a valid constant expression.
 
 //TODO: Pipes should be writable by end users and added to Views. 
-
-//TODO: Perhaps we could use the import keyword for both inserting
-//and feeding templates like {{import name from [file|memory] [var as local]}} or [*] or [null]
-//and we would use up less names. I like that idea a lot.
 
 //TODO: Not tokenizer, but maybe we can somewhat serialize the operations in a text string so 
 //they can be saved and reused???? That would constitute a program XD!.
@@ -65,7 +73,6 @@ class Tokenizer {
 		while(!$this->reader->is_eof()) {
 
 			$chunk=$this->next();
-
 
 			//Here is the crux, our chunk is either
 			// 1 - just {{
@@ -131,6 +138,10 @@ class Tokenizer {
 	const RESERVED_OPEN_LIST='[';	//!< Specifies the character to open lists.
 	const RESERVED_CLOSE_LIST=']';	//!< Specifies the character to close lists.
 	const RESERVED_COMMA=',';	//!< Specifies a list separator.
+	const RESERVED_IMPORT='import';	//!< Specifies the Keyword for template import.
+	const RESERVED_FILE='file';	//!< Specifies the keyword for template import from file.
+	const RESERVED_SUB='sub';	//!< Specifies the keyword for subtemplate import.
+	const RESERVED_ASTERISK='*';	//!< Specifies the keyword for importing all template data.
 
 	private $reader;		//!< A Reader object.
 	private $parse_mode=self::MODE_LITERAL; //!< Parser mode, either literal or interpreter. We assume we start out passing through what we read.
@@ -237,10 +248,13 @@ class Tokenizer {
 		return strlen($buffer)==1 && $this->is_non_whitespace_token($buffer);
 	}
 
-	private function is_non_whitespace_token($chr) {
-		return $chr==self::RESERVED_COMMA ||
-			$chr==self::RESERVED_OPEN_LIST ||
-			$chr==self::RESERVED_CLOSE_LIST;
+	//!Checks if the parameter is any of the special tokens that exist without surrounding whitespace.
+
+	//!This function mostly accomodates syntactic ease like put["hello"] instead of {{ put ["hello"] }}
+	private function is_non_whitespace_token($str) {
+		return $str==self::RESERVED_COMMA ||
+			$str==self::RESERVED_OPEN_LIST ||
+			$str==self::RESERVED_CLOSE_LIST;
 	}
 
 	//!Reads a string literal from " to ".
@@ -280,6 +294,7 @@ class Tokenizer {
 	//!Returns an interpreter token.
 	private function generate_interpreter_token($chunk) {
 
+			//TODO... okay, this is getting ridiculous... Can we get an array and do lookup????
 		switch($chunk) {
 			case self::RESERVED_PUT:
 				return new Token_put; break;
@@ -317,6 +332,14 @@ class Tokenizer {
 				return new Token_close_list; break;
 			case self::RESERVED_COMMA:
 				return new Token_comma; break;
+			case self::RESERVED_IMPORT:
+				return new Token_import; break;
+			case self::RESERVED_FILE:
+				return new Token_import_file; break;
+			case self::RESERVED_SUB:
+				return new Token_import_sub; break;
+			case self::RESERVED_ASTERISK:
+				return new Token_asterisk; break;
 			default:
 				if(is_numeric($chunk)) {
 					//TODO: Kind of redundant, right??

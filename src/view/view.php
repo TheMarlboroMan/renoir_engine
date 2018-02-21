@@ -1,13 +1,6 @@
 <?php
 namespace Renoir_engine\View;
 
-//TODO: Add "import" for new and fed templates.
-//TODO: Can we resolve a fed template when feeding it?. Instead of when
-//rendering it?. It will actually help us catching template errors... but will
-//disallow importing the variables into it.
-
-//TODO: Add pipes for scalar presentation.
-
 //TODO: Add different outputs: to file, to string, to standard.
 
 //!Defines the combination of a template and a set of variables that will be used on it.
@@ -46,7 +39,8 @@ class View {
 		try {
 			$t=Tokenizer::from_string($this->template_source);
 			$p=new Parser;
-//			$p->activate_debug();
+			//TODO: this should be some Ini constant...
+			//$p->activate_debug();
 			$tokens=$t->tokenize();
 			$op=$p->parse($tokens);
 
@@ -88,10 +82,57 @@ class View {
 				return $this->do_foreach($op); break;
 			case Operation_if::class:
 				return $this->do_if($op); break;
+			case Operation_import::class:
+				return $this->do_import($op); break;
 			default:
 				$this->fail('Unknown token '.get_class($op)); break;
 		}
 	} 
+
+	private function do_import(Operation_import $_op) {
+
+		$v=null;
+
+		//Getting the template...
+		switch($_op->source_mode) {
+			case Operation_import::SOURCE_FILE:
+				$filename=$this->expression_value($_op->source);
+				try {
+					$v=new View;
+					$v->set_template_file($filename);
+				}
+				catch(\Exception $e) {
+					$this->fail('unable to import template: '.$e->getMessage());
+				}
+			break;
+			case Operation_import::SOURCE_SUB:
+				//TODO... Load up $v.
+				die('Import source sub is not implemented yet!!');
+			break;
+			default:
+				$this->fail('unknown source mode in do_import!'); break;
+		}
+
+		switch($_op->import_mode) {
+			case Operation_import::IMPORT_MODE_ALL:
+				$v->values=$this->values; break;
+			case Operation_import::IMPORT_MODE_NONE: break;
+			case Operation_import::IMPORT_MODE_SYMBOL:
+				foreach($_op->symbol_list as $symbol) {
+					//TODO: Now we need to resolve this too!!!!.
+					die('resolving shit!');
+				}
+			break;
+			default:
+				$this->fail('unknown import mode in do_import!'); break;
+		}
+
+		//TODO: This might have to do with the output mode... We'll look into that, ok?.
+		//Suffice to feed this do_put with the result of $v->render() set to an internal string.
+		$v->render();
+
+		return $_op->next;
+	}
 
 	//!Executes the put operation.
 	private function do_put(Operation_put $_op) {
