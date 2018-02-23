@@ -26,11 +26,22 @@ try{
 		}
 	}
 
+	class Title {
+		public function get_title() {return "My title!!";}
+	};
+
+	class Title_holder {
+		public $var;
+		public function __construct(){
+			$this->var=new Title();
+		}
+	};
+
 	$things=[new Thing("a value", [1, 2, 3]), new Thing("another value",[])];
 
 	$v=new View();
 	echo $v->set_template_file("base-template.tpl")
-		->set('header', 'My header!')
+		->set('data', ['vars' => ['stuff' => ['title' => new Title_holder]]])
 		->set('things', $things)
 		->set('words', ['each', 'and', 'every', 'word'])
 		->set('number', 199)

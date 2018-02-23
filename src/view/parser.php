@@ -234,7 +234,7 @@ class Parser {
 
 		$check_type=function($_e) {
 			if(get_class($_e)!=Solvable_expression::class) {
-				$this->fail('expressions in foreach loop must be solvable');
+				$this->fail('expressions in foreach loop must be solvable, '.get_class($_e).' found');
 			}		
 		};
 
@@ -243,8 +243,8 @@ class Parser {
 
 		$this->shift_must_be($_t, Token_as::class);
 
+		//Local expression can either be static or solvable.
 		$local_expr=$this->extract_expression($this->shift_must_be($_t, Token_expression::class));
-		$check_type($local_expr);
 
 		//Now we'll need another series of instructions to run 
 		$operation_head=$this->process_inner_parser($_t, self::STOP_AT_FOREACHEND_FUNC, 'foreach');

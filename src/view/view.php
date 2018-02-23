@@ -42,9 +42,11 @@ class View {
 			//TODO: this should be some Ini constant...
 			//$p->activate_debug();
 			$tokens=$t->tokenize();
+//print_r($tokens);
 			$op=$p->parse($tokens);
 
-			return $this->do_operation_sequence($op);
+			$this->do_operation_sequence($op);
+			return $this->buffer;
 		}
 		catch(\Exception $e) {
 			$this->fail('Render error: '.$e->getMessage());
@@ -54,12 +56,7 @@ class View {
 	//Inner workings...
 	private $template_source=null;
 	private $values=[];
-
-	const MARK_ARRAY_INDEX='.';		//!<Defines the character used as array accesor.
-	const MARK_OBJECT_PROPERTY='>';		//!<Defines the character used as object propery accesor.
-	const MARK_OBJECT_METHOD='*';		//!<Defines the character used as object method accesor.
-	//TODO: I don't like regex for this... Maybe a little parser.
-	const MARK_REGEXP='\.\>\*';		//!<Full regular expression for all accesors.
+	private $buffer='';
 
 	private function do_operation_sequence($op) {
 
@@ -72,7 +69,7 @@ class View {
 
 		switch(get_class($op)) {
 			case Operation_passthrough::class:
-				$this->output($op->value); 
+				$this->to_output($op->value); 
 				return $op->next;
 			break;
 			case Operation_put::class:
@@ -115,17 +112,14 @@ class View {
 				$this->fail('unknown import mode in do_import!'); break;
 		}
 
-		//TODO: This might have to do with the output mode... We'll look into that, ok?.
-		//Suffice to feed this do_put with the result of $v->render() set to an internal string.
-		$v->render();
-
+		$this->to_output($v->render());
 		return $_op->next;
 	}
 
 	//!Executes the put operation.
 	private function do_put(Operation_put $_op) {
 		foreach($_op->expressions as &$e) {
-			$this->output($this->expression_value($e));
+			$this->to_output($this->expression_value($e));
 		}
 		return $_op->next; 
 	}
@@ -222,14 +216,13 @@ class View {
 	//TODO: In fact, this should be a "pointer to function" 
 	//whenever we call it... 
 	//!Just in case we want to output to somewhere else in the future.
-	private function output($str) {
+	private function to_output($str) {
 
 		if(!is_scalar($str)) {
 			$this->fail($str.' resolves to non-scalar and cannot be output');
 		}
 
-
-		echo $str;
+		$this->buffer.=$str;
 	}
 
 	/* private function output_std($str)
@@ -237,65 +230,103 @@ class View {
 	private function output_file($str)
 	*/
 
-	//TODO: Document how the path is specified!!!!!.
 	//!Resolves a value by following a path from the $values array.
 	private function resolve_scalar($expression) {
 
-		//TODO: I'm pretty much sure that reading this char by char
-		//will be fast enough and readable.
+		//A little hack: we normalize the expression so the first elements it a 
+		//dot, as it will point to $this->values, which is an array.
+		$expression=".".$expression;
+		$index=0;
 
-		$ref=null;
-		$parts=preg_split('/(['.self::MARK_REGEXP.'])/', $expression, -1, PREG_SPLIT_DELIM_CAPTURE);
-		$key=$parts[0];
+		$reaches_indirection=function($cur) {
+			return Tokenizer::RESERVED_ARRAY_INDIRECTION == $cur ||
+				Tokenizer::RESERVED_PROPERTY_INDIRECTION == $cur ||
+				Tokenizer::RESERVED_METHOD_INDIRECTION == $cur;
+		};
 
-		if(!array_key_exists($key, $this->values)) {
-			throw new View_exception("Key '".$key."' does not exist in view");
-		}
+		//Extracts the next indirection and key.
+		$extract_chunk=function($expression, &$index) use ($reaches_indirection) {
 
-		$ref=&$this->values[$key];
-		for($i=1; $i<count($parts); $i+=2) {
+			$res=new Expression_chunk;
+			$cur=null;
+			while($index < strlen($expression)) {
+				$cur=$expression[$index];
+				if(strlen($res->key) > 1 && $reaches_indirection($cur)) {
+					break;
+				}
 
-			$type=$parts[$i];
-			$next=$parts[$i+1];
-
-			switch($type) {
-				case self::MARK_ARRAY_INDEX:
-
-					if(is_numeric($next)) {
-						if($next < 0 || $next >= count($ref)) {
-							$this->fail("Deep array index '".$next."' is invalid in view");
-						}
-						$next=(int)$next;
-					}
-					else {
-						if(!array_key_exists($next, $ref)) {
-							$this->fail("Deep array key '".$next."' does not exist in view");
-						}
-					}
-					$ref=&$ref[$next]; break;
-
-				case self::MARK_OBJECT_PROPERTY:
-					if(!property_exists($ref, $next)) {
-						$this->fail("Property '".$next."' does not exist in object view");
-					}
-					$ref=&$ref->$next; break;
-
-				case self::MARK_OBJECT_METHOD:
-					if(!method_exists($ref, $next)) {
-						$this->fail("Method '".$next."' does not exist in object view");
-					}
-					$ref=call_user_func([$ref, $next]); break;
-
-				default:
-					$this->fail("'".$type."' is not a valid indirection marker for a template"); break;
+				$res->key.=$cur;
+				++$index;
 			}
-		}
+
+			$res->indirection=$res->key[0];
+			$res->key=substr($res->key, 1);
+			return $res;
+		};
+
+		$chunk=null;
+		$ref=&$this->values;
+
+		do {
+			$chunk=$extract_chunk($expression, $index);
+			$ref=&$this->solve_indirection($chunk->indirection, $chunk->key, $ref);
+		}while($index < strlen($expression));
 
 		return $ref;
+	}
+
+	private function &solve_indirection($indirection, $key, &$ref) {
+
+		switch($indirection) {
+			case Tokenizer::RESERVED_ARRAY_INDIRECTION:
+				if(is_numeric($key)) {
+					if($key < 0 || $key >= count($ref)) {
+						$this->fail("Deep array index '".$key."' is invalid in view");
+					}
+					$key=(int)$key;
+				}
+				else {
+					if(!array_key_exists($key, $ref)) {
+						$this->fail("Deep array key '".$key."' does not exist in view");
+					}
+				}
+				return $ref[$key];
+			break;
+			case Tokenizer::RESERVED_PROPERTY_INDIRECTION:
+				if(!is_object($ref)) {
+					$this->fail("Property '".$key."' does not exist in object view, which is not class");
+				}
+				else if(!property_exists($ref, $key)) {
+					$this->fail("Property '".$key."' does not exist in object view");
+				}
+				return $ref->$key; 
+			break;
+			case Tokenizer::RESERVED_METHOD_INDIRECTION:
+				if(!is_object($ref)) {
+					$this->fail("Method '".$key."' does not exist in object view, which is not class");
+				}
+				else if(!method_exists($ref, $key)) {
+					$this->fail("Method '".$key."' does not exist in object view");
+				}
+				$res=call_user_func([$ref, $key]);
+				return $res;
+			break;
+			default:
+				$this->fail("Unknown and unreachable indirection '".$indirection."'"); break;
+		}
 	}
 
 	//!Throws an exception.
 	private function fail($msg) {
 		throw new View_exception($msg);
+	}
+}
+
+class Expression_chunk {
+	public $key;
+	public $indirection;
+	public function __construct($_k=null, $_i=null) {
+		$this->key=$_k;
+		$this->indirection=$_i;
 	}
 }

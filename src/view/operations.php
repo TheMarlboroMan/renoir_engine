@@ -27,11 +27,11 @@ class Operation_put extends Operation {
 //!An operation that will begin a foreach loop.
 class Operation_foreach extends Operation {
 	public $iterable_expression;	//!< Solvable_expression that represents the iterable value.
-	public $local_expression;	//!< Solvable expression that names the local variable for the loop body.
+	public $local_expression;	//!< Solvable or constant expression that names the local variable for the loop body.
 	public $inner_operation_head;	//!< Points to the first Operation of the loop.
 
 	//!Constructs the operation.
-	public function __construct(Solvable_expression $_i, Solvable_expression $_l, $_h) {
+	public function __construct(Solvable_expression $_i, Expression $_l, $_h) {
 		$this->iterable_expression=$_i;
 		$this->local_expression=$_l;
 		$this->inner_operation_head=$_h;

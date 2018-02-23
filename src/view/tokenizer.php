@@ -6,26 +6,39 @@ namespace Renoir_engine\View;
 //!The tokens produced may or may not make sintactic sense: that is up to the
 //!parser. This Tokenizer works in two mutually exclusive modes: it either 
 //!interprets code or makes a passthrough of the source. The syntax is simple:
-//
+//!
 //!Text will be passed as it is. Double brackets enter and exit from 
-//!code mode. Code mode works with a few easy constructs (which can be nested)
+//!code mode. Inside code mode there are only a few data types:
+//!"constant strings", 11 (constant numbers) and @solvable.expression 
+//!(solvable expressions). Solvable expressions are paths that will be 
+//!followed in the "values" array of the view. There are four important
+//!symbols: @ begins a solvable path, . indicates array indirection, 
+//!> indicates object property indirection and ) indicates object method
+//!calls (no parameters are available. So, the path @myarray.1.cosa>val)call
+//!will be resolved as the first item in the myarray array, then the "cosa"
+//!key of an array, the val property of the object located in such a key
+//!and the "call" method from the object present at "val".
+//!
+//!Code mode works with a few easy constructs (which can be nested)
 //!and keywords. Expressions must not be named after keywords!. The list of
 //!keywords has been kept to a minimum.
 //!
 //!"put" outputs a list of constant values or solvable tokens in the View.
 //!Elements in the list are comma separated. Constant values can be null,
 //!strings or integers. Srings are delimited by double quotes.
-//!{{put ["hello"]}} or {{put [path.to.solvable.token, "ok", 33]}}
+//!{{put ["hello"]}} or {{put [@path.to.solvable.token, "ok", 33]}}
 //!
-//!"foreach" iterates an array present in the View:
-//!{{foreach myarray as localkey}}
-//!The variable localkey represents the array value: {{put [localkey]}}
+//!"foreach" iterates an array present in the View. The left part (the iterable)
+//!must always be a solvable symbol. The right part (the local key) can either
+//!be a constant expression or a solvable.
+//!{{foreach @myarray as "localkey"}}
+//!The variable @localkey represents the array value: {{put [@localkey]}}
 //!{{endforeach}}
 //!
 //!"if", "then" and "else" control conditional flow. There is no "else if"
 //!construct. Comparison operators are ==, !=, >=, <=, < and >. Values on both
 //!sides can be constants (integers, strings and null) or solvable by the View.
-//!{{if myvar > 3 then put ["My var is greater than 3"] else put ["My var is not greater than 3"] endif}}
+//!{{if @myvar > 3 then put ["My var is greater than 3"] else put ["My var is not greater than 3"] endif}}
 //
 //!"import" is used to insert another template. Its scope can be defined with
 //!a list, be left blank of fully inherited with "*". It makes no recursion 
@@ -33,22 +46,9 @@ namespace Renoir_engine\View;
 //!filename, you want it to be a constant expression, hence the string.
 //!Templates cannot be imported from a string... I could make them do it, 
 //!but I don't really see a use for it.
-//!{{import file "templatename" [var as local, var2 as somethingsolvable]}}
-//!{{import file somethingsolvable []}}
-//!{{import file somethingsolvable [*]}}
-
-//TODO: We'll likely need to add as symbol for solvable shit, like $.
-//It is cool: everything that is not a number, null, quoted string or a 
-//solvable expression we can assume to be an invalid expression :D... but
-//that will fuck up foreach (thing as thing) and import (crap as blap)...
-//But then again, these things would be solvable later, right???? All is good :D.
-//I think I will use @solve.me.now, like at solve of me of now.
-//As for how to tokenize it, it is similar to the quoted string, only we start at
-//@ and we stop at a whitespace, a comma or a closing list. To be fair, the @
-//can be ommited from the resulting path.
-
-//TODO: Once the above is done, please, rewrite the path parser so it does not
-//use stupid regex.
+//!{{import file "templatename" [@var as "local", @var2 as @somethingsolvable]}}
+//!{{import file @somethingsolvable []}}
+//!{{import file @somethingsolvable [*]}}
 
 //TODO: Add support for pipes with put. If need be, add the pipe to the list
 //of allowed characters after a @path expression.
@@ -127,8 +127,7 @@ class Tokenizer {
 	const MODE_LITERAL=1;		//!< Indicates that the parser must change interpretation mode to "passthrough".
 	const MODE_INTERPRETER=2;	//!< Indicates that the parser must change interpretation mode to "code".
 
-	const QUOTE_STRING='"';		//!< Specifies the type of string quotation used.
-
+	const RESERVED_QUOTE_STRING='"';		//!< Specifies the type of string quotation used.
 	const RESERVED_OPEN_INTERPRETER='{{'; 	//!< Specifies the tags to open the interpreter.
 	const RESERVED_CLOSE_INTERPRETER='}}';	//!< Specifies the tags to close the interpreter.
 	const RESERVED_PUT='put';	//!< Specifies the keyword for put operation.
@@ -152,6 +151,11 @@ class Tokenizer {
 	const RESERVED_IMPORT='import';	//!< Specifies the Keyword for template import.
 	const RESERVED_FILE='file';	//!< Specifies the keyword for template import from file.
 	const RESERVED_ASTERISK='*';	//!< Specifies the keyword for importing all template data.
+	const RESERVED_SOLVABLE='@';	//!< Specifies the keyword for solvable paths.
+	const RESERVED_UNDERSCORE='_';	//!< Specifies the underscore symbol.
+	const RESERVED_ARRAY_INDIRECTION='.';
+	const RESERVED_PROPERTY_INDIRECTION='>';
+	const RESERVED_METHOD_INDIRECTION=')';
 
 	private $reader;		//!< A Reader object.
 	private $parse_mode=self::MODE_LITERAL; //!< Parser mode, either literal or interpreter. We assume we start out passing through what we read.
@@ -210,12 +214,17 @@ class Tokenizer {
 	private function read_interpreter() {
 
 		$this->skip_whitespace();
-		if(self::QUOTE_STRING==$this->reader->get()) {
+
+		$cur=$this->reader->get();
+
+		if(self::RESERVED_QUOTE_STRING==$cur) {
 			return $this->read_string_literal();
+		}
+		else if(self::RESERVED_SOLVABLE==$cur) {
+			return $this->read_path_literal();
 		}
 		else {
 			$buffer='';
-			$cur='';
 
 			while(!$this->reader->is_eof()){ //While true may cause us to go out of bounds...
 
@@ -267,6 +276,15 @@ class Tokenizer {
 			$str==self::RESERVED_CLOSE_LIST;
 	}
 
+	//!Checks if the character is a letter, underscore, number or any of the path solving symbols.
+	private function is_valid_path_character($chr) {
+		return ctype_alnum($chr) || 
+			self::RESERVED_UNDERSCORE == $chr ||
+			self::RESERVED_ARRAY_INDIRECTION == $chr ||
+			self::RESERVED_PROPERTY_INDIRECTION == $chr ||
+			self::RESERVED_METHOD_INDIRECTION == $chr;
+	}
+
 	//!Reads a string literal from " to ".
 	private function read_string_literal() {
 		$res="";
@@ -276,8 +294,21 @@ class Tokenizer {
 			}
 
 			$res.=$this->reader->next();
-		}while(self::QUOTE_STRING!=$this->reader->get());
+		}while(self::RESERVED_QUOTE_STRING!=$this->reader->get());
 		$res.=$this->reader->next(); //End quote...
+		return $res;
+	}
+
+	//!Reads from @ to whitespace, comma or close list.
+	private function read_path_literal() {
+		$res="";
+		do{
+			if($this->reader->is_eof()) {
+				$this->fail("unterminated path literal '".$res."'");
+			}
+
+			$res.=$this->reader->next();
+		}while($this->is_valid_path_character($this->reader->get()));
 		return $res;
 	}
 
@@ -304,7 +335,7 @@ class Tokenizer {
 	//!Returns an interpreter token.
 	private function generate_interpreter_token($chunk) {
 
-			//TODO... okay, this is getting ridiculous... Can we get an array and do lookup????
+		//TODO... okay, this is getting ridiculous... Can we get an array and do lookup????
 		switch($chunk) {
 			case self::RESERVED_PUT:
 				return new Token_put; break;
@@ -363,8 +394,11 @@ class Tokenizer {
 					//Remove quotes from literals.
 					return new Token_expression(substr($chunk, 1, -1), Token_expression::CONSTANT);
 				}
+				else if($this->is_path_string($chunk)) {
+					return new Token_expression(substr($chunk, 1), Token_expression::SOLVABLE);
+				}
 				else {
-					return new Token_expression($chunk, Token_expression::SOLVABLE);
+					$this->fail("unknown expression ".$chunk);
 				}
 			break;
 		}
@@ -372,9 +406,14 @@ class Tokenizer {
 		$this->fail("generate_interpreter_token reached unreachable code");
 	}
 
+	//!Returns true is $str begins with @.
+	private function is_path_string($str) {
+		return strlen($str) > 2 && $str[0]==self::RESERVED_SOLVABLE;
+	}
+
 	//!Returns true is $str is between double quotes.
 	private function is_quoted_string($str) {
-		return strlen($str) > 2 && $str[0]==self::QUOTE_STRING && substr($str, -1)==self::QUOTE_STRING;
+		return strlen($str) > 2 && $str[0]==self::RESERVED_QUOTE_STRING && substr($str, -1)==self::RESERVED_QUOTE_STRING;
 	}
 
 	//!Throws an exception.
