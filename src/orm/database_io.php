@@ -29,7 +29,7 @@ class Database_IO {
 		$_e->before_insert();
 
 		$texts_fields=[];
-		$parameters='';
+		$parameters=[];
 		$bindings=[];
 
 		$repo=Database_entity_link_repository::get(get_class($_e));
@@ -37,14 +37,23 @@ class Database_IO {
 		foreach($repo->definitions as &$link) {
 
 			if(!$link->is_id) {
+				//Without accessor, we skip.
+				if(null===$link->accessor) {
+					continue;
+				}
+
 				$paramname=':'.$link->field;
 				$texts_fields[]=$link->field;
 				$parameters[]=$paramname;
-				$bindings[$paramname]=call_user_func([$_e, $link->accesor]);
+				$bindings[$paramname]=call_user_func([$_e, $link->accessor]);
+				if($link->property_type==Database_entity_link::TYPE_DATETIME && null!==$bindings[$paramname]) {
+					$bindings[$paramname]=$bindings[$paramname]->format('Y-m-d H:i:s');
+				}
 			}
 		}
 
 		$statement=null;
+
 		try {
 			$statement=$this->conn->get()->prepare("INSERT INTO ".$repo->table." (".implode(',', $texts_fields).") VALUES (".implode(',', $parameters).");");
 			foreach($bindings as $param => $value) {
@@ -78,9 +87,15 @@ class Database_IO {
 		foreach($repo->definitions as &$link) {
 
 			if(!$link->is_id) {
+				//Without accessor, we skip, except for the id.
+				if(null===$link->accessor) continue;
+
 				$paramname=':'.$link->property;
 				$updates[]=$link->property.' = '.$paramname;
-				$bindings[$paramname]=call_user_func([$_e, $link->accesor]);
+				$bindings[$paramname]=call_user_func([$_e, $link->accessor]);
+				if($link->property_type==Database_entity_link::TYPE_DATETIME && null!==$bindings[$paramname]) {
+					$bindings[$paramname]=$bindings[$paramname]->format('Y-m-d H:i:s');
+				}
 			}
 			else {
 				$field_id=$link->field;

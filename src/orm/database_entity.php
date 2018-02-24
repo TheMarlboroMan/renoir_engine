@@ -14,6 +14,10 @@ namespace Renoir_engine\ORM;
 //!parent constructor, define itself in the Database_entity_link_repository
 //!and provide an id field (a primary key).
 //!
+//!A property with no setter (except for the id, that should not have one) will 
+//!NOT be added to the instance when returned from the database. A property
+//!with no getter will not be added to the database when inserted or updated.
+//!
 //!Examples of use can be found in the examples/orm directory.
 
 abstract class Database_entity {
@@ -89,10 +93,14 @@ abstract class Database_entity {
 					case Database_entity_link::TYPE_BOOL:	$value=(bool)$data[$key]; break;
 					case Database_entity_link::TYPE_INT:	$value=(int)$data[$key]; break;
 					case Database_entity_link::TYPE_FLOAT:	$value=(float)$data[$key];  break;
+					case Database_entity_link::TYPE_DATETIME: $value=new \DateTime($data[$key]); break;
 				}
 
+				//Fields without setters are skipped.
 				if(!$link->is_id) {
-					call_user_func([$this, $link->setter], $value);
+					if(null!==$link->setter) {
+						call_user_func([$this, $link->setter], $value);
+					}
 				}
 				else {
 					if($allow_id===self::DISALLOW_ID) {

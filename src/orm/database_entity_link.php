@@ -20,17 +20,21 @@ class Database_entity_link {
 	public $field;			//!<	Corresponding field name in the database.
 	public $property_type;		//!<	Datatype to be used in the class when retrieving data.
 	public $is_id;			//!<	Indicates if the field is the primary key. 
-	public $accesor;		//!<	Defines the name of the accesor (getter) function of the class.
-	public $setter;			//!<	Defines the name of the setter function of the class.
+	public $accessor=null;		//!<	Defines the name of the accessor (getter) function of the class.
+	public $setter=null;			//!<	Defines the name of the setter function of the class.
 
-	const VOID=666;		//!< Indicates "no accesor" or "no setter".
-	const USE_DEFAULT=667;	//!< Indicates "get name of accesor and getter from property name".
+	const VOID=666;		//!< Indicates "no accessor" or "no setter".
+	const USE_DEFAULT=667;	//!< Indicates "get name of accessor and getter from property name".
 	const IS_ID=668;	//!< Indicates that the field is the primary key.
+	const NOT_ID=669;	//!< Indicates that the field is the primary key.
 
-	const TYPE_STRING=669;	//!< Indicates a data type of string.
-	const TYPE_INT=670;	//!< Indicates a data type of integer.
-	const TYPE_BOOL=671;	//!< Indicates a data type of boolean.
-	const TYPE_FLOAT=672;	//!< Indicates a data type of float.
+	const TYPE_MIN=1000;	//!< Minimum (non-included) data type symbol.
+	const TYPE_STRING=1001;	//!< Indicates a data type of string.
+	const TYPE_INT=1002;	//!< Indicates a data type of integer.
+	const TYPE_BOOL=1003;	//!< Indicates a data type of boolean.
+	const TYPE_FLOAT=1004;	//!< Indicates a data type of float.
+	const TYPE_DATETIME=1005;	//!< Indicates a data type of datetime.
+	const TYPE_MAX=1006;	//!< Maximum (non-included) data type symbol.
 
 	//!Creates an object. The two first parameters map to the property and field name. The rest use default values that can be changed if needed.
 	public static function create($_p, $_f, $_t=self::TYPE_STRING, $_i=false, $_a=self::USE_DEFAULT, $_s=self::USE_DEFAULT) {
@@ -49,13 +53,14 @@ class Database_entity_link {
 			}
 		};
 
-		if($_t < self::TYPE_STRING || $_t > self::TYPE_FLOAT) {
+		if($_t <= self::TYPE_MIN || $_t >= self::TYPE_MAX) {
 			throw new ORM_exception("Property type (".$_t.") for ".$_p."'s mapping is invalid");
 		}
 
 		$_a=$proc($_a, $_p, 'get_');
 		$_s=$proc($_s, $_p, 'set_');
 
+		//TODO: self::NOT_ID is not used.
 		return new Database_entity_link($_p, $_f, $_t, $_i===self::IS_ID, $_a, $_s);
 	}
 
@@ -65,8 +70,11 @@ class Database_entity_link {
 		$this->field=$_f;
 		$this->property_type=$_t;
 		$this->is_id=$_i;
-		$this->accesor=$_a;
+		$this->accessor=$_a;
 		$this->setter=$_s;
 	}
 
+	public function __set($_name, $_value) {
+		throw new ORM_exception("Addition of new properties is disabled");
+	}
 }
