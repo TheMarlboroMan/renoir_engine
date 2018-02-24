@@ -40,25 +40,35 @@ try {
 	$connection=new \Renoir_engine\ORM\Database_connection('localhost', 'oot', 'freeuser');
 	$dbio=new \Renoir_engine\ORM\Database_IO($connection);
 
-/*
-	$thing=$dbio->from_id(Thing::class, 5);
-	var_dump($thing);
-*/
-/*
+	//Basic CRUD operations...
+	//Read.
+	try {
+		$thing=$dbio->from_id(Thing::class, 5);
+		var_dump($thing);
+	}
+	catch(\Exception $e) {
+		echo "COULD NOT FIND OBJECT WITH ID 5\n";
+	}
+
+	//Create.
 	$create=new Thing();
 	$create->set_name("New name");
 	$create->set_description("New description");
-
 	$dbio->insert($create);
 	$id=$create->get_id();
 	var_dump($create);
 
+	//Update...
 	$update=$dbio->from_id(Thing::class, $id);
 	$update->set_name('Change');
 	$update->set_description('Change');
 	$dbio->update($update);
 	var_dump($update);
-*/
+
+	//Delete.
+	//$dbio->delete($update);
+
+	//Fetching operations.
 	echo "==============================================================\n";
 
 	$qd=new \Renoir_engine\ORM\Query_definition;
@@ -67,23 +77,21 @@ try {
 		->set_parameter("name", "%chan%")
 		->set_parameter("id", 12);
 
-/*	$statement=$dbio->select(Thing::class, $qd);
+	//Manual fetch. Good idea to close the statement later.
+	$statement=$dbio->select(Thing::class, $qd);
 	while($data=$statement->fetch()) {
 		$thing=Thing::from_array($data);
 		var_dump($thing);
 	}
-*/
-/*
+	$statement->close();
+
+	//Fetch only the first.
 	$thing=$dbio->select_one(Thing::class, $qd);
-	print_r($thing);
-	die();
-*/
-	$things=$dbio->select_many(Thing::class, $qd);
-	print_r($things);
-	die();
+	var_dump($thing);
 
-
-//	$statement->close();
+	//Fetch an array... optionally specify a limit and offset.
+	$things=$dbio->select_many(Thing::class, $qd /*,limit, offset */);
+	var_dump($things);
 }
 catch(\Exception $e){
 	die('ERROR: '.$e->getMessage());
