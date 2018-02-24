@@ -26,7 +26,7 @@ class Database_connection {
 	//!Tries to connect to the database.
 	public function connect($host, $dbname, $user, $pass=null) {
 
-		if(null!==!$this->pdo) {
+		if(null!==$this->pdo) {
 			throw new ORM_exception("Database_connection was already connected");
 		}
 

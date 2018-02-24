@@ -50,16 +50,10 @@ namespace Renoir_engine\View;
 //!{{import file @somethingsolvable []}}
 //!{{import file @somethingsolvable [*]}}
 
-//TODO: Add support for pipes with put. If need be, add the pipe to the list
-//of allowed characters after a @path expression.
+//TODO: Add support for pipes with put. If need be, add the pipe to the list of allowed characters after a @path expression.
 //TODO: Pipes should be writable by end users and added to Views. 
-
-//TODO: We need a few functions, like size, that acts on strlen or count depending on the value.
-//But these open up a can of worms... maybe just a sizeof keyword that the parser reads
-//greedily and converts into a valid constant expression.
-	//TODO: Or maybe that's a stupid pipe to XD! if myarray | size > 0 then 
-
-//TODO: Fix whitescape space after }} like {{put ["hello"]}} world.
+//TODO: Add size as a pipe, so we can myarray | size > 0.
+//TODO: Fix whitescape space after }} like {{put ["hello"]}} world: it should output it.
 
 class Tokenizer {
 

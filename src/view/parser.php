@@ -187,7 +187,6 @@ class Parser {
 			$this->shift_must_be($_t, Token_as::class);
 			$local_expr=$this->extract_expression($this->shift_must_be($_t, Token_expression::class));
 
-			//TODO: next we have a comma... Or we close the list...
 			switch($this->get_type($_t)) {
 				case Token_comma::class:
 					$this->shift($_t); break;

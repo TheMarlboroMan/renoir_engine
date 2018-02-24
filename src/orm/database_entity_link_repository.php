@@ -48,10 +48,10 @@ class Database_entity_link_repository {
 
 class Database_entity_link_entry {
 	public $table;		//!< Table name.
-	public $definitions;	//!< Database_entity_link object, containing definitions for all fields.
+	public $definitions;	//!< array of Database_entity_link object, containing definitions for all fields.
 
 	//!Creates the entry.
-	public function __construct($_t, Database_entity_link $_d) {
+	public function __construct($_t, array $_d) {
 		$this->table=$_t;
 		$this->definitions=$_d;
 	}
