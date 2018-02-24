@@ -1,10 +1,25 @@
 <?php
 namespace OOT;
 
+if(php_sapi_name()!==PHP_SAPI){
+	die("This script must be run from the console like 'php -f test-orm.php'\n");
+}
+
 require("../../src/orm/autoload.php");
 
 use Renoir_engine\ORM\Database_entity_link_repository;
 use Renoir_engine\ORM\Database_entity_link;
+
+/*
+A table should be created for this entity...
+
+CREATE TABLE thing(
+id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+name VARCHAR(200) NOT NULL,
+description TEXT NOT NULL,
+date DATETIME NOT NULL
+)ENGINE=MYISAM;
+*/
 
 //Define entities...
 class Thing extends \Renoir_engine\ORM\Database_entity {
@@ -12,16 +27,18 @@ class Thing extends \Renoir_engine\ORM\Database_entity {
 	private $id;
 	private $name;
 	private $description;
+	private $date=null; 
 
 	public function get_id() {return $this->id;}
 	public function get_name() {return $this->name;}
 	public function get_description() {return $this->description;}
+	public function get_date() {return $this->date;}
 
 	public function set_name($v) {$this->name=$v;}
 	public function set_description($v) {$this->description=$v;}
+	public function set_date(\DateTime $v) {$this->date=$v;}
 
 	public function __construct() {
-
 		parent::__construct($this->id);
 	}
 }
@@ -30,15 +47,17 @@ class Thing extends \Renoir_engine\ORM\Database_entity {
 Database_entity_link_repository::add(Thing::class, 'thing', [
 	Database_entity_link::create('id', 'id', Database_entity_link::TYPE_INT, Database_entity_link::IS_ID, Database_entity_link::USE_DEFAULT, Database_entity_link::VOID, Database_entity_link::IS_ID),
 	Database_entity_link::create('name', 'name', Database_entity_link::TYPE_STRING),
-	Database_entity_link::create('description', 'description', Database_entity_link::TYPE_STRING)
+	Database_entity_link::create('description', 'description', Database_entity_link::TYPE_STRING),
+	Database_entity_link::create('date', 'date', Database_entity_link::TYPE_DATETIME),
 ]);
 
 
 /******************************************************************************/
 
 try {
-	$connection=new \Renoir_engine\ORM\Database_connection('localhost', 'oot', 'freeuser');
+	$connection=new \Renoir_engine\ORM\Database_connection('localhost', 'oot', 'root');
 	$dbio=new \Renoir_engine\ORM\Database_IO($connection);
+
 
 	//Basic CRUD operations...
 	//Read.
@@ -54,6 +73,7 @@ try {
 	$create=new Thing();
 	$create->set_name("New name");
 	$create->set_description("New description");
+	$create->set_date(new \DateTime());
 	$dbio->insert($create);
 	$id=$create->get_id();
 	var_dump($create);
@@ -62,6 +82,7 @@ try {
 	$update=$dbio->from_id(Thing::class, $id);
 	$update->set_name('Change');
 	$update->set_description('Change');
+	$update->set_date(new \DateTime());
 	$dbio->update($update);
 	var_dump($update);
 
@@ -75,7 +96,7 @@ try {
 	$qd->set_where("name LIKE :name AND id > :id")
 		->set_order("id", \Renoir_engine\ORM\Query_definition::ORDER_DESC)
 		->set_parameter("name", "%chan%")
-		->set_parameter("id", 12);
+		->set_parameter("id", 1);
 
 	//Manual fetch. Good idea to close the statement later.
 	$statement=$dbio->select(Thing::class, $qd);
