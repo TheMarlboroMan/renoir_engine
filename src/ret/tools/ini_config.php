@@ -1,5 +1,5 @@
 <?php
-namespace Renoir_engine\Tools;
+namespace RET\Tools;
 
 //!A very simple wrapper around a .ini file. 
 
@@ -16,13 +16,13 @@ class Ini_config {
 	}
 
 	//!Returns the key. If the key does not exist, null is returned.
-	public function get($key) {
-		return isset($this->data[$key]) ? $this->data[$key] : null;
+	public function get($_key) {
+		return isset($this->data[$_key]) ? $this->data[$_key] : null;
 	}
 
 	//!Checks if the key exists.
-	public function exists($key) {
-		return isset($this->data[$key]);
+	public function exists($_key) {
+		return isset($this->data[$_key]);
 	}
 
 	private $data=null;

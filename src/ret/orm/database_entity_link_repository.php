@@ -1,5 +1,5 @@
 <?php
-namespace Renoir_engine\ORM;
+namespace RET\ORM;
 
 //!Static repository for ORM class definitions.
 
@@ -20,23 +20,23 @@ namespace Renoir_engine\ORM;
 class Database_entity_link_repository {
 
 	//!Adds a class definition. $classname must be the classname, links is an array of Database_entity_link_entry, which can be created with calls to Database_entity_link::create.
-	public static function add($classname, $tablename, array $links) {
+	public static function add($_classname, $_tablename, array $_links) {
 
-		if(array_key_exists($classname, self::$links)) {
-			throw new ORM_exception($classname." was already registered with the entity link repository");
+		if(array_key_exists($_classname, self::$links)) {
+			throw new ORM_exception($_classname." was already registered with the entity link repository");
 		}
 
-		self::$links[$classname]=new Database_entity_link_entry($tablename, $links);
+		self::$links[$_classname]=new Database_entity_link_entry($_tablename, $_links);
 	}
 
 	//!Returns the class definition.
-	public static function get($classname) {
+	public static function get($_classname) {
 
-		if(!array_key_exists($classname, self::$links)) {
-			throw new ORM_exception($classname." was not registered with the entity link repository");
+		if(!array_key_exists($_classname, self::$links)) {
+			throw new ORM_exception($_classname." was not registered with the entity link repository");
 		}
 
-		return self::$links[$classname];
+		return self::$links[$_classname];
 	}
 
 	private static $links=[];

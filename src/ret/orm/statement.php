@@ -1,5 +1,5 @@
 <?php
-namespace Renoir_engine\ORM;
+namespace RET\ORM;
 
 //TODO: Comment.
 class Statement {

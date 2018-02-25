@@ -1,5 +1,5 @@
 <?php
-namespace Renoir_engine\View;
+namespace RET\View;
 
 //!A class that represents a stream reader.
 

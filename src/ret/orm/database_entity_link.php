@@ -1,5 +1,5 @@
 <?php
-namespace Renoir_engine\ORM;
+namespace RET\ORM;
 
 //!Defines part of the mapping of an entity class (a single field).
 
@@ -39,16 +39,16 @@ class Database_entity_link {
 	//!Creates an object. The two first parameters map to the property and field name. The rest use default values that can be changed if needed.
 	public static function create($_p, $_f, $_t=self::TYPE_STRING, $_i=false, $_a=self::USE_DEFAULT, $_s=self::USE_DEFAULT) {
 
-		$proc=function($var, $prop, $def_name) {
+		$proc=function($_var, $_prop, $_def_name) {
 
-			switch($var) {
+			switch($_var) {
 				case self::VOID: return null; break;
-				case self::USE_DEFAULT: return $def_name.$prop; break;
+				case self::USE_DEFAULT: return $_def_name.$_prop; break;
 				default:
-					if(!is_string($var)) {
+					if(!is_string($_var)) {
 						throw new ORM_exception("Getter or setter name must be string in link definition");
 					}
-					return $var;
+					return $_var;
 				break;
 			}
 		};

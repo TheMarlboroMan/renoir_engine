@@ -1,5 +1,5 @@
 <?php
-namespace Renoir_engine\View;
+namespace RET\View;
 
 //!Abstract base class for Expressions, used by the View to use static or looked up value.
 

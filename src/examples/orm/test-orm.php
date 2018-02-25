@@ -5,10 +5,10 @@ if(php_sapi_name()!==PHP_SAPI){
 	die("This script must be run from the console like 'php -f test-orm.php'\n");
 }
 
-require("../../src/orm/autoload.php");
+require("../../../autoload.php");
 
-use Renoir_engine\ORM\Database_entity_link_repository;
-use Renoir_engine\ORM\Database_entity_link;
+use RET\ORM\Database_entity_link_repository;
+use RET\ORM\Database_entity_link;
 
 /*
 A table should be created for this entity...
@@ -24,7 +24,7 @@ date_last_update DATETIME NULL
 */
 
 //Define entities...
-class Thing extends \Renoir_engine\ORM\Database_entity {
+class Thing extends \RET\ORM\Database_entity {
 
 	private $id;
 	private $name;
@@ -77,9 +77,9 @@ Database_entity_link_repository::add(Thing::class, 'thing', [
 /******************************************************************************/
 
 try {
-	$connection=new \Renoir_engine\ORM\Database_connection('localhost', 'oot', 'root');
-	$dbio=new \Renoir_engine\ORM\Database_IO($connection);
 
+	$connection=new \RET\ORM\Database_connection('localhost', 'oot', 'root');
+	$dbio=new \RET\ORM\Database_IO($connection);
 
 	//Basic CRUD operations...
 	//Read.
@@ -116,9 +116,9 @@ try {
 	//Fetching operations.
 	echo "==============================================================\n";
 
-	$qd=new \Renoir_engine\ORM\Query_definition;
+	$qd=new \RET\ORM\Query_definition;
 	$qd->set_where("name LIKE :name AND id > :id")
-		->set_order("id", \Renoir_engine\ORM\Query_definition::ORDER_DESC)
+		->set_order("id", \RET\ORM\Query_definition::ORDER_DESC)
 		->set_parameter("name", "%chan%")
 		->set_parameter("id", 1);
 

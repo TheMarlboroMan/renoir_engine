@@ -1,5 +1,5 @@
 <?php
-namespace Renoir_engine\ORM;
+namespace RET\ORM;
 
 class Query_parameter {
 	public $name;

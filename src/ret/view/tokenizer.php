@@ -1,5 +1,8 @@
 <?php
-namespace Renoir_engine\View;
+namespace RET\View;
+
+//Dirty trick... autoload won't pick the tokens, as they are all in the same file.
+require_once("def_tokens.php"); 
 
 //!The Tokenizer consumes source code and produces an array of tokens.
 
@@ -160,14 +163,14 @@ class Tokenizer {
 	}
 
 	//!Returns the parser mode we must use after $chunk is processed. It might return "no changes".
-	private function extract_mode_delimiter($chunk) {
+	private function extract_mode_delimiter($_chunk) {
 
-		if(!$chunk) {
+		if(!$_chunk) {
 			$this->fail('Chunk cannot be empty for extract_mode_delimiter');
 		}
 
-		if(self::RESERVED_OPEN_INTERPRETER == substr($chunk, -2)) return self::MODE_INTERPRETER;
-		else if (self::RESERVED_CLOSE_INTERPRETER == substr($chunk, -2)) return self::MODE_LITERAL;
+		if(self::RESERVED_OPEN_INTERPRETER == substr($_chunk, -2)) return self::MODE_INTERPRETER;
+		else if (self::RESERVED_CLOSE_INTERPRETER == substr($_chunk, -2)) return self::MODE_LITERAL;
 		else return self::MODE_UNCHANGED;
 	}
 
@@ -257,26 +260,26 @@ class Tokenizer {
 
 	//!The cases are things like put[hello ,again] where , must be read as its own token.
 	//!or put [hello, where [ must be read as its own.
-	private function is_beginning_of_non_whitespace_token($buffer) {
-		return strlen($buffer)==1 && $this->is_non_whitespace_token($buffer);
+	private function is_beginning_of_non_whitespace_token($_buffer) {
+		return strlen($_buffer)==1 && $this->is_non_whitespace_token($_buffer);
 	}
 
 	//!Checks if the parameter is any of the special tokens that exist without surrounding whitespace.
 
 	//!This function mostly accomodates syntactic ease like put["hello"] instead of {{ put ["hello"] }}
-	private function is_non_whitespace_token($str) {
-		return $str==self::RESERVED_COMMA ||
-			$str==self::RESERVED_OPEN_LIST ||
-			$str==self::RESERVED_CLOSE_LIST;
+	private function is_non_whitespace_token($_str) {
+		return $_str==self::RESERVED_COMMA ||
+			$_str==self::RESERVED_OPEN_LIST ||
+			$_str==self::RESERVED_CLOSE_LIST;
 	}
 
 	//!Checks if the character is a letter, underscore, number or any of the path solving symbols.
-	private function is_valid_path_character($chr) {
-		return ctype_alnum($chr) || 
-			self::RESERVED_UNDERSCORE == $chr ||
-			self::RESERVED_ARRAY_INDIRECTION == $chr ||
-			self::RESERVED_PROPERTY_INDIRECTION == $chr ||
-			self::RESERVED_METHOD_INDIRECTION == $chr;
+	private function is_valid_path_character($_chr) {
+		return ctype_alnum($_chr) || 
+			self::RESERVED_UNDERSCORE == $_chr ||
+			self::RESERVED_ARRAY_INDIRECTION == $_chr ||
+			self::RESERVED_PROPERTY_INDIRECTION == $_chr ||
+			self::RESERVED_METHOD_INDIRECTION == $_chr;
 	}
 
 	//!Reads a string literal from " to ".
@@ -314,23 +317,23 @@ class Tokenizer {
 	}
 
 	//!Returns a token from the $chunk: entry point for specific functions.
-	private function generate_token($chunk) {
+	private function generate_token($_chunk) {
 
 		switch($this->parse_mode) {
 			case self::MODE_LITERAL:
-				return new Token_passthrough($chunk); break;
+				return new Token_passthrough($_chunk); break;
 			case self::MODE_INTERPRETER: 
-				return $this->generate_interpreter_token($chunk); break;
+				return $this->generate_interpreter_token($_chunk); break;
 		}
 
 		$this->fail("generate_token reached unreachable code");
 	}
 
 	//!Returns an interpreter token.
-	private function generate_interpreter_token($chunk) {
+	private function generate_interpreter_token($_chunk) {
 
 		//TODO... okay, this is getting ridiculous... Can we get an array and do lookup????
-		switch($chunk) {
+		switch($_chunk) {
 			case self::RESERVED_PUT:
 				return new Token_put; break;
 			case self::RESERVED_FOREACH:
@@ -374,25 +377,26 @@ class Tokenizer {
 			case self::RESERVED_ASTERISK:
 				return new Token_asterisk; break;
 			default:
-				if(is_numeric($chunk)) {
+				if(is_numeric($_chunk)) {
 					//TODO: Kind of redundant, right??
-					if(is_int((int)$chunk)) {
-						return new Token_expression($chunk, Token_expression::CONSTANT);
+					if(is_int((int)$_chunk)) {
+						return new Token_expression($_chunk, Token_expression::CONSTANT);
 					}
 					//Couldn't care less about non integer numbers :P, even if there's nothing to gain with this.
 					else {
 						$this->fail('only integer numeric constants are supported');
 					}
 				}
-				else if($this->is_quoted_string($chunk)) {
+				else if($this->is_quoted_string($_chunk)) {
 					//Remove quotes from literals.
-					return new Token_expression(substr($chunk, 1, -1), Token_expression::CONSTANT);
+					return new Token_expression(substr($_chunk, 1, -1), Token_expression::CONSTANT);
 				}
-				else if($this->is_path_string($chunk)) {
-					return new Token_expression(substr($chunk, 1), Token_expression::SOLVABLE);
+				else if($this->is_path_string($_chunk)) {
+					//Remove solvable marker.
+					return new Token_expression(substr($_chunk, 1), Token_expression::SOLVABLE);
 				}
 				else {
-					$this->fail("unknown expression ".$chunk);
+					$this->fail("unknown expression ".$_chunk);
 				}
 			break;
 		}
@@ -401,17 +405,17 @@ class Tokenizer {
 	}
 
 	//!Returns true is $str begins with @.
-	private function is_path_string($str) {
-		return strlen($str) > 2 && $str[0]==self::RESERVED_SOLVABLE;
+	private function is_path_string($_str) {
+		return strlen($_str) > 2 && $_str[0]==self::RESERVED_SOLVABLE;
 	}
 
 	//!Returns true is $str is between double quotes.
-	private function is_quoted_string($str) {
-		return strlen($str) > 2 && $str[0]==self::RESERVED_QUOTE_STRING && substr($str, -1)==self::RESERVED_QUOTE_STRING;
+	private function is_quoted_string($_str) {
+		return strlen($_str) > 2 && $_str[0]==self::RESERVED_QUOTE_STRING && substr($_str, -1)==self::RESERVED_QUOTE_STRING;
 	}
 
 	//!Throws an exception.
-	private function fail($msg) {
-		throw new View_exception("Tokenizer error: ".$msg);
+	private function fail($_msg) {
+		throw new View_exception("Tokenizer error: ".$_msg);
 	}
 }

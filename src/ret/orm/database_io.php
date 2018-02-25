@@ -1,5 +1,5 @@
 <?php
-namespace Renoir_engine\ORM;
+namespace RET\ORM;
 
 //!Performs all database input and output operations through Database_entity objects.
 class Database_IO {
@@ -145,7 +145,7 @@ class Database_IO {
 		}
 	}
 
-	//!Returns a Renoir_engine\ORM\Statement from the classname and query definition.
+	//!Returns a ORM\Statement from the classname and query definition.
 	public function select($_classname, Query_definition $_q) {
 
 		if(!class_exists($_classname)) {

@@ -35,11 +35,19 @@ In addition, you can generate the Doxygen documentation by running "doxygen doxy
 
 If it is NOT another directory, it is a part of the previous version. I am keeping them around, just in case I need them but so far all code has been brand new.
 
-# What's the deal with the autoload.php files?
+# What's with the RET namespace?
 
-Each namespace (src/namespacename) has its own autoload.php file that loads all classes from the namespace. The autoload.php file in the root just loads all those files and the old dependencies (this is needed for me to work on my other projects while I migrate them).
+The root namespace began its existence as "Renoir_engine". As the project grows I am reminded more and more of my C++ background, where I absolutely loath long namespace names, thus I came up with RET as the acronym for Renoir Engine Toolkit.
 
-# Parts:
+# Why don't you follow the PSR naming conventions?
+
+Because I am a rebel. 
+
+No, seriously, some of the recommendations I don't like, so as much as I am aware of them, I prefer not to follow. According to the PHP-FIG itself, that's OK ("Nobody in the group wants to tell you, as a programmer, how to build your application.") but it's not like I asked them.
+
+Actually, now that I got you reading, I am firmly believe that the only naming convention that matters is "be consistent" within the confines of you project. That's all.
+
+# Parts: 
 
 A description of the Renoir Engine Mark IV parts follows:
 

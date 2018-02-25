@@ -1,5 +1,5 @@
 <?php
-require("../../src/view/autoload.php");
+require("../../../autoload.php");
 //require("use-case-testsuite.php");
 
 set_error_handler(function ($err_severity, $err_msg, $err_file, $err_line, array $err_context) {
@@ -10,7 +10,7 @@ set_error_handler(function ($err_severity, $err_msg, $err_file, $err_line, array
 });
 
 //execute_testsuite();
-use Renoir_engine\View\View;
+use RET\View\View;
 
 try{
 

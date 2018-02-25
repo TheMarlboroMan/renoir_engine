@@ -1,5 +1,11 @@
 <?php
-namespace Renoir_engine\View;
+namespace RET\View;
+
+//Dirty trick... autoload won't pick the operations and expressions, 
+//as they are all in the same file. I really don't want to have 20 more files
+//here.
+require_once("def_operations.php");
+require_once("def_expressions.php");  
 
 //!Parses an array of tokens to produce Operation objects.
 
@@ -74,13 +80,13 @@ class Parser {
 				case Token_passthrough::class:
 					return $this->do_passthrough($tok, $_t); break;
 				case Token_put::class:
-					return $this->do_put($tok, $_t); break;
+					return $this->do_put($_t); break;
 				case Token_foreach::class:
-					return $this->do_foreach($tok, $_t); break;
+					return $this->do_foreach($_t); break;
 				case Token_if::class:
-					return $this->do_if($tok, $_t); break;
+					return $this->do_if($_t); break;
 				case Token_import::class:
-					return $this->do_import($tok, $_t); break;
+					return $this->do_import($_t); break;
 				default:
 					$this->fail('Unexpected token '.get_class($tok)); 
 				break;
@@ -120,9 +126,9 @@ class Parser {
 	}
 	
 	//!Checks if the first item in the array is of type $type. Does not discard the token. Throws when no more tokens are available.
-	private function check_type(array $_t, $type) {
+	private function check_type(array $_t, $_type) {
 
-		return $this->get_type($_t)==$type;
+		return $this->get_type($_t)==$_type;
 	}
 
 	//!Returns the type of the first item in the array.
@@ -134,13 +140,13 @@ class Parser {
 	}
 
 	//!Creates a passthrough operation.
-	private function do_passthrough(Token_passthrough $tok, array &$_t) {
-		$this->new_operation(new Operation_passthrough($tok->contents));
+	private function do_passthrough(Token_passthrough $_tok, array &$_t) {
+		$this->new_operation(new Operation_passthrough($_tok->contents));
 		return $this->process($_t);
 	}
 
 	//!Creates an import operation
-	private function do_import(Token_import $tok, array &$_t) {
+	private function do_import(array &$_t) {
 
 		//We have already discarded "import"... Let us get the "filename".
 		$source_expression=$this->extract_expression($this->shift_must_be($_t, Token_expression::class));
@@ -205,7 +211,7 @@ class Parser {
 	}
 
 	//!Creates a put operation.
-	private function do_put(Token_put $tok, array &$_t) {
+	private function do_put(array &$_t) {
 
 		$this->shift_must_be($_t, Token_open_list::class);
 		//Now we should have a comma separated list of expressions...
@@ -229,7 +235,7 @@ class Parser {
 	}
 
 	//!Creates the sequence for a foreach operation.
-	private function do_foreach(Token_foreach $tok, array &$_t) {
+	private function do_foreach(array &$_t) {
 
 		$check_type=function($_e) {
 			if(get_class($_e)!=Solvable_expression::class) {
@@ -254,7 +260,7 @@ class Parser {
 	}
 
 	//!Creates the sequence for a if operation.
-	private function do_if(Token_if $tok, array &$_t) {
+	private function do_if(array &$_t) {
 		//Extract lhs, condition and rhs (a == b)...
 		$lhs=$this->extract_expression($this->shift_must_be($_t, Token_expression::class));
 		$tok_condition=$this->shift_must_be($_t, Token_condition::class)->condition;
@@ -296,14 +302,14 @@ class Parser {
 	}
 
 	//!Creates a new operation from the parameter and does the dirty work of setting the pointers.
-	private function new_operation($obj) {
+	private function new_operation($_obj) {
 
 		if(null===$this->current_operation) {
-			$this->current_operation=$obj;
+			$this->current_operation=$_obj;
 			$this->root_operation=$this->current_operation;
 		}
 		else {
-			$this->current_operation->next=$obj;
+			$this->current_operation->next=$_obj;
 			$this->current_operation=$this->current_operation->next;
 		}
 	}
@@ -321,17 +327,17 @@ class Parser {
 	}
 
 	//!Consumes and returns the next token, making sure it is of the specified type.
-	private function shift_must_be(array &$_t, $type) {
+	private function shift_must_be(array &$_t, $_type) {
 		$tok=$this->shift($_t);
-		if(get_class($tok) != $type) {
-			$this->fail('shift_must_be expected '.$type.', got '.get_class($tok));
+		if(get_class($tok) != $_type) {
+			$this->fail('shift_must_be expected '.$_type.', got '.get_class($tok));
 		}
 		return $tok;
 	}
 
 	//Converts a token if condition to the equivalent operation if condition. So far they are the same, but well, better safe than sorry!.
-	private function if_operation_condition_from_tok_condition($cond) {
-		switch($cond) {
+	private function if_operation_condition_from_tok_condition($_cond) {
+		switch($_cond) {
 			case Token_condition::EQUALS:
 				return Operation_if::EQUALS; break;
 			case Token_condition::GREATER_THAN:
@@ -362,13 +368,13 @@ class Parser {
 		}
 	}
 
-	private function fail($msg) {
-		throw new View_exception("Parser [".$this->debug_name." - ".$this->debug_depth."] error: ".$msg);
+	private function fail($_msg) {
+		throw new View_exception("Parser [".$this->debug_name." - ".$this->debug_depth."] error: ".$_msg);
 	}
 
-	private function debug_announce($msg) {
+	private function debug_announce($_msg) {
 		if($this->debug_active) {
-			echo '['.$this->debug_name.' - '.$this->debug_depth.'] : '.$msg."\n";
+			echo '['.$this->debug_name.' - '.$this->debug_depth.'] : '.$_msg."\n";
 		}
 	}
 }

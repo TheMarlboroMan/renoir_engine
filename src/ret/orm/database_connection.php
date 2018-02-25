@@ -1,5 +1,5 @@
 <?php
-namespace Renoir_engine\ORM;
+namespace RET\ORM;
 
 //!A wrapper container for a PDO database connection.
 
@@ -16,22 +16,23 @@ class Database_connection {
 	public function get() {return $this->pdo;}
 
 	//!Creates the object. If parameters are specified, attempts to connect.
-	public function __construct($host=null, $dbname=null, $user=null, $pass=null) {
+	public function __construct($_host=null, $_dbname=null, $_user=null, $_pass=null) {
 
-		if($host && $dbname && $user) {
-			$this->connect($host, $dbname, $user, $pass);
+		if($_host && $_dbname && $_user) {
+			$this->connect($_host, $_dbname, $_user, $_pass);
 		}
 	}
 
 	//!Tries to connect to the database.
-	public function connect($host, $dbname, $user, $pass=null) {
+	public function connect($_host, $_dbname, $_user, $_pass=null) {
 
 		if(null!==$this->pdo) {
 			throw new ORM_exception("Database_connection was already connected");
 		}
 
 		try {
-			$this->pdo=new \PDO("mysql:host=$host;dbname=$dbname;", $user, $pass);
+			//TODO: So far we only allow for Mysql connections... We should change that, right???
+			$this->pdo=new \PDO("mysql:host=$_host;dbname=$_dbname;", $_user, $_pass);
 			$this->pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
 		}
 		catch(\Exception $e) {

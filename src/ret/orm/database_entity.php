@@ -1,5 +1,5 @@
 <?php
-namespace Renoir_engine\ORM;
+namespace RET\ORM;
 
 //!Represents the base class for a database entity in the manner of active-record techniques.
 //
@@ -55,11 +55,11 @@ abstract class Database_entity {
 	//!the property or database field, as indicated by the second parameter. 
 	//!Not all values must be present for this to work. If the id is found
 	//!it is treated as if it was real: meaning it might overwrite real data on update.
-	public static function from_array(array $data, $discriminator=self::KEY_PROPERTY) {
+	public static function from_array(array $_data, $_discriminator=self::KEY_PROPERTY) {
 
 		$classname=get_called_class();
 		$result=new $classname;
-		$result->set_properties($data, $discriminator, self::ALLOW_ID);
+		$result->set_properties($_data, $_discriminator, self::ALLOW_ID);
 		return $result;
 	}	
 
@@ -69,15 +69,15 @@ abstract class Database_entity {
 	//!database field or the property name, as the discriminator parameter
 	//!dictates, property by default). If the id is included in the 
 	//!data it may throw unless the third parameter is set to ALLOW_ID.
-	public final function set_properties(array $data, $discriminator=self::KEY_PROPERTY, $allow_id=self::DISALLOW_ID) {
+	public final function set_properties(array $_data, $_discriminator=self::KEY_PROPERTY, $_allow_id=self::DISALLOW_ID) {
 
-		switch($discriminator) {
+		switch($_discriminator) {
 			case self::KEY_PROPERTY:
 			case self::KEY_FIELD: break;
 			default: throw new ORM_exception("Discriminator must be field or property"); break;
 		}
 
-		switch($allow_id) {
+		switch($_allow_id) {
 			case self::ALLOW_ID:
 			case self::DISALLOW_ID: break;
 			default: throw new ORM_exception("Allow_id must be either allow or disallow"); break;
@@ -85,15 +85,15 @@ abstract class Database_entity {
 
 		foreach(Database_entity_link_repository::get(get_called_class())->definitions as &$link) {
 			$key=self::KEY_PROPERTY ? $link->property : $link->field;
-			if(array_key_exists($key, $data)) {
+			if(array_key_exists($key, $_data)) {
 
 				$value=null;
 				switch($link->property_type) {
-					case Database_entity_link::TYPE_STRING:	$value=(string)$data[$key]; break;
-					case Database_entity_link::TYPE_BOOL:	$value=(bool)$data[$key]; break;
-					case Database_entity_link::TYPE_INT:	$value=(int)$data[$key]; break;
-					case Database_entity_link::TYPE_FLOAT:	$value=(float)$data[$key];  break;
-					case Database_entity_link::TYPE_DATETIME: $value=new \DateTime($data[$key]); break;
+					case Database_entity_link::TYPE_STRING:	$value=(string)$_data[$key]; break;
+					case Database_entity_link::TYPE_BOOL:	$value=(bool)$_data[$key]; break;
+					case Database_entity_link::TYPE_INT:	$value=(int)$_data[$key]; break;
+					case Database_entity_link::TYPE_FLOAT:	$value=(float)$_data[$key];  break;
+					case Database_entity_link::TYPE_DATETIME: $value=new \DateTime($_data[$key]); break;
 				}
 
 				//Fields without setters are skipped.
@@ -103,7 +103,7 @@ abstract class Database_entity {
 					}
 				}
 				else {
-					if($allow_id===self::DISALLOW_ID) {
+					if($_allow_id===self::DISALLOW_ID) {
 						throw new ORM_exception("Id was included in data when allow_id was disabled in call to set_properties");
 					}
 					$this->id=$value;

@@ -1,5 +1,5 @@
 <?php
-namespace Renoir_engine\View;
+namespace RET\View;
 
 //!Base class for an operation. 
 
@@ -11,16 +11,16 @@ abstract class Operation {
 //!An Operation that outputs through static text.
 class Operation_passthrough extends Operation {
 	public $value='';	//!< Text to be output.
-	public function __construct($val) {	//!< Constructs the object from the static text.
-		$this->value=$val;
+	public function __construct($_val) {	//!< Constructs the object from the static text.
+		$this->value=$_val;
 	}
 }
 
 //!An Operation that outputs an Expression.
 class Operation_put extends Operation {
 	public $expressions;	//!< Array of expressions to be output.
-	public function __construct(array $exp) {	//!< Constructs the object from the given array of expressions.
-		$this->expressions=$exp;
+	public function __construct(array $_exp) {	//!< Constructs the object from the given array of expressions.
+		$this->expressions=$_exp;
 	}
 }
 

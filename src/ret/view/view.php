@@ -1,5 +1,15 @@
 <?php
-namespace Renoir_engine\View;
+namespace RET\View;
+
+//TODO: Document move to its own file.
+class Expression_chunk {
+	public $key;
+	public $indirection;
+	public function __construct($_k=null, $_i=null) {
+		$this->key=$_k;
+		$this->indirection=$_i;
+	}
+}
 
 //TODO: Add different outputs: to file, to string, to standard.
 
@@ -8,29 +18,29 @@ namespace Renoir_engine\View;
 //!TODO: Extended comment.
 //!TODO: Document path syntax.
 
-class View {
+class View { 
 
 	//!Sets the template code from a string.
-	public function set_template_string($str) {
-		if(!strlen($str)) {
+	public function set_template_string($_str) {
+		if(!strlen($_str)) {
 			$this->fail("set_template_string must be called with a string!");
 	}
-		$this->template_source=$str;
+		$this->template_source=$_str;
 		return $this;
 	}
 
 	//!Sets the template code from a file.
-	public function set_template_file($filename) {
-		if(!file_exists($filename) || !is_file($filename)) {
-			$this->fail("'".$filename."' is not a valid template source file!");
+	public function set_template_file($_filename) {
+		if(!file_exists($_filename) || !is_file($_filename)) {
+			$this->fail("'".$_filename."' is not a valid template source file!");
 		}
-		$this->template_source=file_get_contents($filename);
+		$this->template_source=file_get_contents($_filename);
 		return $this;
 	}
 
 	//!Sets a variable in the local scope.
-	public function set($key, $value) {
-		$this->values[$key]=$value;
+	public function set($_key, $_value) {
+		$this->values[$_key]=$_value;
 		return $this;
 	}
 
@@ -58,36 +68,35 @@ class View {
 	private $values=[];
 	private $buffer='';
 
-	private function do_operation_sequence($op) {
+	private function do_operation_sequence($_op) {
 
 		do{
-			$op=$this->process_operation($op);
-		}while($op!=null);
+			$_op=$this->process_operation($_op);
+		}while($_op!=null);
 	}
 
-	private function process_operation($op) {
+	private function process_operation($_op) {
 
-		switch(get_class($op)) {
+		switch(get_class($_op)) {
 			case Operation_passthrough::class:
-				$this->to_output($op->value); 
-				return $op->next;
+				$this->to_output($_op->value); 
+				return $_op->next;
 			break;
 			case Operation_put::class:
-				return $this->do_put($op);
+				return $this->do_put($_op);
 			break;
 			case Operation_foreach::class:
-				return $this->do_foreach($op); break;
+				return $this->do_foreach($_op); break;
 			case Operation_if::class:
-				return $this->do_if($op); break;
+				return $this->do_if($_op); break;
 			case Operation_import::class:
-				return $this->do_import($op); break;
+				return $this->do_import($_op); break;
 			default:
-				$this->fail('Unknown token '.get_class($op)); break;
+				$this->fail('Unknown token '.get_class($_op)); break;
 		}
 	} 
 
 	private function do_import(Operation_import $_op) {
-
 		$v=new View;
 
 		//Getting the template...
@@ -126,29 +135,29 @@ class View {
 
 	//Foreach only works with available values, not for constant values.
 	//This could do with better scope management...
-	private function do_foreach(Operation_foreach $op) {
+	private function do_foreach(Operation_foreach $_op) {
 
 		//TODO: This should work with every iterable thing, not only arrays.
-		$it=$this->expression_value($op->iterable_expression);
+		$it=$this->expression_value($_op->iterable_expression);
 		if(!is_array($it)) {
-			$this->fail($op->iterable_expression->value.' is not an array');
+			$this->fail($_op->iterable_expression->value.' is not an array');
 		}
 
 		//Now... if the local expression exists in the larger scope, let's save it...
-		$original=$this->value_exists($op->local_expression->value) ? $this->get_value($op->local_expression->value) : null;
+		$original=$this->value_exists($_op->local_expression->value) ? $this->get_value($_op->local_expression->value) : null;
 
 		foreach($it as $value) {
-			$this->set($op->local_expression->value, $value);
+			$this->set($_op->local_expression->value, $value);
 			//TODO: do_operation_sequence could actually inherit a scope.
-			$this->do_operation_sequence($op->inner_operation_head);
+			$this->do_operation_sequence($_op->inner_operation_head);
 		}
 
 		//Restore the original key.
 		if(null!==$original) {
-			$this->set($op->local_expression->value, $original);
+			$this->set($_op->local_expression->value, $original);
 		}
 
-		return $op->next;
+		return $_op->next;
 	}
 
 	//!Executes the if operation.
@@ -189,16 +198,16 @@ class View {
 	}
 
 	//!Checks if a value exists in the local scope.
-	private function value_exists($val) {
-		return array_key_exists($val, $this->values);
+	private function value_exists($_val) {
+		return array_key_exists($_val, $this->values);
 	}
 
 	//!Returns a value in the $values array from the local scope.
-	private function get_value($val) {
-		if(!array_key_exists($val, $this->values)) {
-			$this->fail("Value '".$val."' does not exist");
+	private function get_value($_val) {
+		if(!array_key_exists($_val, $this->values)) {
+			$this->fail("Value '".$_val."' does not exist");
 		}
-		return $this->values[$val];
+		return $this->values[$_val];
 	}
 
 	//!Given an expression object, returns its value, either constant or by resolving a given path to a scalar value.
@@ -216,13 +225,13 @@ class View {
 	//TODO: In fact, this should be a "pointer to function" 
 	//whenever we call it... 
 	//!Just in case we want to output to somewhere else in the future.
-	private function to_output($str) {
+	private function to_output($_str) {
 
-		if(!is_scalar($str)) {
-			$this->fail($str.' resolves to non-scalar and cannot be output');
+		if(!is_scalar($_str)) {
+			$this->fail($_str.' resolves to non-scalar and cannot be output');
 		}
 
-		$this->buffer.=$str;
+		$this->buffer.=$_str;
 	}
 
 	/* private function output_std($str)
@@ -231,11 +240,11 @@ class View {
 	*/
 
 	//!Resolves a value by following a path from the $values array.
-	private function resolve_scalar($expression) {
+	private function resolve_scalar($_expression) {
 
 		//A little hack: we normalize the expression so the first elements it a 
 		//dot, as it will point to $this->values, which is an array.
-		$expression=".".$expression;
+		$_expression=".".$_expression;
 		$index=0;
 
 		$reaches_indirection=function($cur) {
@@ -245,12 +254,12 @@ class View {
 		};
 
 		//Extracts the next indirection and key.
-		$extract_chunk=function($expression, &$index) use ($reaches_indirection) {
+		$extract_chunk=function($_expression, &$index) use ($reaches_indirection) {
 
 			$res=new Expression_chunk;
 			$cur=null;
-			while($index < strlen($expression)) {
-				$cur=$expression[$index];
+			while($index < strlen($_expression)) {
+				$cur=$_expression[$index];
 				if(strlen($res->key) > 1 && $reaches_indirection($cur)) {
 					break;
 				}
@@ -268,65 +277,56 @@ class View {
 		$ref=&$this->values;
 
 		do {
-			$chunk=$extract_chunk($expression, $index);
+			$chunk=$extract_chunk($_expression, $index);
 			$ref=&$this->solve_indirection($chunk->indirection, $chunk->key, $ref);
-		}while($index < strlen($expression));
+		}while($index < strlen($_expression));
 
 		return $ref;
 	}
 
-	private function &solve_indirection($indirection, $key, &$ref) {
+	private function &solve_indirection($_indirection, $_key, &$_ref) {
 
-		switch($indirection) {
+		switch($_indirection) {
 			case Tokenizer::RESERVED_ARRAY_INDIRECTION:
-				if(is_numeric($key)) {
-					if($key < 0 || $key >= count($ref)) {
-						$this->fail("Deep array index '".$key."' is invalid in view");
+				if(is_numeric($_key)) {
+					if($_key < 0 || $_key >= count($_ref)) {
+						$this->fail("Deep array index '".$_key."' is invalid in view");
 					}
-					$key=(int)$key;
+					$_key=(int)$_key;
 				}
 				else {
-					if(!array_key_exists($key, $ref)) {
-						$this->fail("Deep array key '".$key."' does not exist in view");
+					if(!array_key_exists($_key, $_ref)) {
+						$this->fail("Deep array key '".$_key."' does not exist in view");
 					}
 				}
-				return $ref[$key];
+				return $_ref[$_key];
 			break;
 			case Tokenizer::RESERVED_PROPERTY_INDIRECTION:
-				if(!is_object($ref)) {
-					$this->fail("Property '".$key."' does not exist in object view, which is not class");
+				if(!is_object($_ref)) {
+					$this->fail("Property '".$_key."' does not exist in object view, which is not class");
 				}
-				else if(!property_exists($ref, $key)) {
-					$this->fail("Property '".$key."' does not exist in object view");
+				else if(!property_exists($_ref, $_key)) {
+					$this->fail("Property '".$_key."' does not exist in object view");
 				}
-				return $ref->$key; 
+				return $_ref->$_key; 
 			break;
 			case Tokenizer::RESERVED_METHOD_INDIRECTION:
-				if(!is_object($ref)) {
-					$this->fail("Method '".$key."' does not exist in object view, which is not class");
+				if(!is_object($_ref)) {
+					$this->fail("Method '".$_key."' does not exist in object view, which is not class");
 				}
-				else if(!method_exists($ref, $key)) {
-					$this->fail("Method '".$key."' does not exist in object view");
+				else if(!method_exists($_ref, $_key)) {
+					$this->fail("Method '".$_key."' does not exist in object view");
 				}
-				$res=call_user_func([$ref, $key]);
+				$res=call_user_func([$_ref, $_key]);
 				return $res;
 			break;
 			default:
-				$this->fail("Unknown and unreachable indirection '".$indirection."'"); break;
+				$this->fail("Unknown and unreachable indirection '".$_indirection."'"); break;
 		}
 	}
 
 	//!Throws an exception.
-	private function fail($msg) {
-		throw new View_exception($msg);
-	}
-}
-
-class Expression_chunk {
-	public $key;
-	public $indirection;
-	public function __construct($_k=null, $_i=null) {
-		$this->key=$_k;
-		$this->indirection=$_i;
+	private function fail($_msg) {
+		throw new View_exception($_msg);
 	}
 }
