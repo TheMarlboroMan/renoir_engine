@@ -47,8 +47,9 @@ require_once("def_tokens.php");
 //!a list, be left blank of fully inherited with "*". It makes no recursion 
 //!checks, so you can easily run out of memory :D. Notice that if you want a 
 //!filename, you want it to be a constant expression, hence the string.
-//!Templates cannot be imported from a string... I could make them do it, 
-//!but I don't really see a use for it.
+//!Templates cannot be imported from a string (as in I have a string that I
+//!want to use as the body of the template, like $body='put["text"]';)
+//!... I could make them do it, but I don't really see a use for it.
 //!{{import file "templatename" [@var as "local", @var2 as @somethingsolvable]}}
 //!{{import file @somethingsolvable []}}
 //!{{import file @somethingsolvable [*]}}
