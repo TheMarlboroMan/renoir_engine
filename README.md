@@ -1,6 +1,10 @@
 Renoir Engine Mark VI.
 ======================
 
+# Archiving:
+
+As of December of 2021 I am archiving this repository. The Renoir engine has powered many applications along these years, but it is time to retire it from development and adopt new, more modular approaches. 
+
 # About
 
 This is my very own framework (more like... set of tools) for developing PHP applications. The legacy code is actually very old, but I am working very hard on creating a new version.
